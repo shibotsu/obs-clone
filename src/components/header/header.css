@@ -8,8 +8,7 @@ header {
 }
 
 .logo {
-  font-size: 1.5rem;
-  font-weight: bold;
+  width: 140px;
   color: white;
   text-decoration: none;
 }

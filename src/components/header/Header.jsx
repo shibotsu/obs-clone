@@ -20,7 +20,9 @@ const Header = () => {
   return (
     <FluentProvider theme={webLightTheme}>
       <header>
-        <Link to="/">Livestream app</Link>
+        <Link to="/">
+          <img className="logo" src="logo.png" alt="Logo" />
+        </Link>
 
         <Input placeholder="Search streams..." className="search-bar" />
 
