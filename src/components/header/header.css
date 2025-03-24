@@ -1,0 +1,32 @@
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: "#0078D4";
+  color: "white";
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-decoration: none;
+}
+
+.search-bar {
+  width: 350px;
+}
+
+.avatar {
+  cursor: pointer;
+  display: flex;
+  justify-content: end;
+}
+
+.auth-container {
+  width: 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
