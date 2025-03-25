@@ -1,6 +1,7 @@
 #include "incl/ScreenCapture.h"
 #include <QDebug>
 #include <sstream>
+#include <QPainter>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -174,6 +175,11 @@ bool ScreenCapture::captureFrame()
         return false;
     }
 
+    // Get mouse info
+    int offsetX = m_outputDesc.DesktopCoordinates.left;
+    int offsetY = m_outputDesc.DesktopCoordinates.top;
+    getMouse(&m_ptrInfo, &frameInfo, offsetX, offsetY);
+
     // QI for ID3D11Texture2D
     hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&m_acquiredDesktopImage);
     desktopResource->Release();
@@ -205,6 +211,9 @@ bool ScreenCapture::captureFrame()
         }
 
         m_d3dContext->Unmap(m_stagingTexture, 0);
+
+        // Draw mouse cursor on top of the frame
+        drawMouse(m_latestFrame, &m_ptrInfo);
     }
     else {
         qDebug() << "Failed to map staging texture:" << hr;
@@ -246,5 +255,217 @@ void ScreenCapture::cleanup()
     if (m_d3dDevice) {
         m_d3dDevice->Release();
         m_d3dDevice = nullptr;
+    }
+}
+
+HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* frameInfo, int offsetX, int offsetY)
+{
+    HRESULT hr = S_OK;
+
+    // A non-zero mouse update timestamp indicates that there is a mouse position update and optionally a shape change
+    if (frameInfo->LastMouseUpdateTime.QuadPart == 0)
+    {
+        return hr;
+    }
+
+    bool updatePosition = true;
+
+    // Make sure we don't update pointer position wrongly
+    // If pointer is invisible, make sure we did not get an update from another output that the last time that said pointer
+    // was visible, if so, don't set it to invisible or update.
+    if (!frameInfo->PointerPosition.Visible && (ptrInfo->WhoUpdatedPositionLast != m_outputNumber))
+    {
+        updatePosition = false;
+    }
+
+    // If two outputs both say they have a visible, only update if new update has newer timestamp
+    if (frameInfo->PointerPosition.Visible && ptrInfo->Visible &&
+        (ptrInfo->WhoUpdatedPositionLast != m_outputNumber) &&
+        (ptrInfo->LastTimeStamp.QuadPart > frameInfo->LastMouseUpdateTime.QuadPart))
+    {
+        updatePosition = false;
+    }
+
+    // Update position
+    if (updatePosition)
+    {
+        ptrInfo->Position.x = frameInfo->PointerPosition.Position.x + m_outputDesc.DesktopCoordinates.left - offsetX;
+        ptrInfo->Position.y = frameInfo->PointerPosition.Position.y + m_outputDesc.DesktopCoordinates.top - offsetY;
+        ptrInfo->WhoUpdatedPositionLast = m_outputNumber;
+        ptrInfo->LastTimeStamp = frameInfo->LastMouseUpdateTime;
+        ptrInfo->Visible = frameInfo->PointerPosition.Visible != 0;
+    }
+
+    // No new shape
+    if (frameInfo->PointerShapeBufferSize == 0)
+    {
+        return hr;
+    }
+
+    // Old buffer too small
+    if (frameInfo->PointerShapeBufferSize > ptrInfo->BufferSize)
+    {
+        if (ptrInfo->PtrShapeBuffer)
+        {
+            delete[] ptrInfo->PtrShapeBuffer;
+            ptrInfo->PtrShapeBuffer = nullptr;
+        }
+        ptrInfo->PtrShapeBuffer = new (std::nothrow) BYTE[frameInfo->PointerShapeBufferSize];
+        if (!ptrInfo->PtrShapeBuffer)
+        {
+            qDebug() << "Failed to allocate memory for pointer shape";
+            ptrInfo->BufferSize = 0;
+            return E_OUTOFMEMORY;
+        }
+        // Update buffer size
+        ptrInfo->BufferSize = frameInfo->PointerShapeBufferSize;
+    }
+
+    UINT bufferSizeRequired;
+    // Get shape
+    hr = m_deskDupl->GetFramePointerShape(
+        frameInfo->PointerShapeBufferSize,
+        reinterpret_cast<VOID*>(ptrInfo->PtrShapeBuffer),
+        &bufferSizeRequired,
+        &(ptrInfo->ShapeInfo));
+
+    if (FAILED(hr))
+    {
+        if (hr != DXGI_ERROR_ACCESS_LOST)
+        {
+            qDebug() << "Failed to get frame pointer shape. HRESULT:" << hr;
+        }
+        delete[] ptrInfo->PtrShapeBuffer;
+        ptrInfo->PtrShapeBuffer = nullptr;
+        ptrInfo->BufferSize = 0;
+        return hr;
+    }
+
+    return hr;
+}
+
+void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
+{
+    // If pointer is not visible or there's no shape data, nothing to draw
+    if (!ptrInfo->Visible || !ptrInfo->PtrShapeBuffer) {
+        return;
+    }
+
+    // Get the cursor position
+    int x = ptrInfo->Position.x;
+    int y = ptrInfo->Position.y;
+
+    // Get pointer shape information
+    DXGI_OUTDUPL_POINTER_SHAPE_INFO shapeInfo = ptrInfo->ShapeInfo;
+    UINT width = shapeInfo.Width;
+    UINT height = shapeInfo.Height;
+    UINT pitch = shapeInfo.Pitch;
+    BYTE* buffer = ptrInfo->PtrShapeBuffer;
+
+    // Ensure the mouse cursor is within the image boundaries
+    if (x < 0 || y < 0 || x >= image.width() || y >= image.height()) {
+        return;
+    }
+
+    QPainter painter(&image);
+
+    // Handle different cursor types
+    switch (shapeInfo.Type) {
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME:
+    {
+        // Monochrome cursor (AND/XOR masks)
+        QImage cursorImage(width, height, QImage::Format_ARGB32);
+        cursorImage.fill(Qt::transparent);
+
+        // XOR mask is in the first half, AND mask in the second half
+        int andMaskOffset = pitch * (height / 2);
+
+        for (UINT row = 0; row < height / 2; row++) {
+            for (UINT col = 0; col < width; col++) {
+                // Get AND and XOR mask values for this pixel
+                UINT byteIndex = row * pitch + col / 8;
+                UINT bitIndex = 7 - (col % 8); // Most significant bit first
+
+                bool andMask = (buffer[andMaskOffset + byteIndex] & (1 << bitIndex)) != 0;
+                bool xorMask = (buffer[byteIndex] & (1 << bitIndex)) != 0;
+
+                QRgb color;
+                if (andMask) {
+                    if (xorMask) {
+                        // Inverted screen without transparency
+                        color = qRgba(255, 255, 255, 255); // White
+                    }
+                    else {
+                        // Transparent
+                        color = qRgba(0, 0, 0, 0);
+                    }
+                }
+                else {
+                    if (xorMask) {
+                        // Inverted screen
+                        color = qRgba(0, 0, 0, 255); // Black
+                    }
+                    else {
+                        // Opaque
+                        color = qRgba(0, 0, 0, 255); // Black
+                    }
+                }
+
+                cursorImage.setPixel(col, row, color);
+            }
+        }
+
+        // Draw the cursor onto the image
+        painter.drawImage(x, y, cursorImage);
+        break;
+    }
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR:
+    {
+        // Color cursor (BGRA format)
+        QImage cursorImage(buffer, width, height, pitch, QImage::Format_ARGB32);
+        painter.drawImage(x, y, cursorImage);
+        break;
+    }
+    case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR:
+    {
+        // Masked color cursor
+        QImage cursorImage(width, height, QImage::Format_ARGB32);
+        cursorImage.fill(Qt::transparent);
+
+        for (UINT row = 0; row < height; row++) {
+            BYTE* srcRow = buffer + (row * pitch);
+            for (UINT col = 0; col < width; col++) {
+                // BGRA format
+                BYTE b = srcRow[col * 4];
+                BYTE g = srcRow[col * 4 + 1];
+                BYTE r = srcRow[col * 4 + 2];
+                BYTE a = srcRow[col * 4 + 3];
+
+                // If the alpha channel is 0, this is a masked area
+                if (a == 0) {
+                    // The color data contains the mask
+                    if (b == 0 && g == 0 && r == 0) {
+                        // Transparent area
+                        cursorImage.setPixel(col, row, qRgba(0, 0, 0, 0));
+                    }
+                    else {
+                        // Inverted area (XOR)
+                        // For simplicity, just use black
+                        cursorImage.setPixel(col, row, qRgba(0, 0, 0, 255));
+                    }
+                }
+                else {
+                    // Normal color
+                    cursorImage.setPixel(col, row, qRgba(r, g, b, a));
+                }
+            }
+        }
+
+        painter.drawImage(x, y, cursorImage);
+        break;
+    }
+    default:
+        qDebug() << "Unknown cursor type:" << shapeInfo.Type;
+        break;
     }
 }
