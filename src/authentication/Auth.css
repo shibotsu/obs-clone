@@ -1,0 +1,43 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Changed from center to flex-start */
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  margin-top: 0; /* Ensure no additional margin */
+}
+
+.login-container .ms-Stack {
+  max-width: 500px;
+  width: 100%;
+  padding: 40px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-container .ms-TextField {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.login-container .ms-TextField .ms-TextField-fieldGroup {
+  height: 44px;
+}
+
+.login-container .ms-TextField label {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-container .ms-Button {
+  width: 100%;
+  height: 44px;
+  margin-top: 10px;
+}
+
+.login-container .ms-TextField-fieldGroup:focus-within {
+  border-color: #0078d4;
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}

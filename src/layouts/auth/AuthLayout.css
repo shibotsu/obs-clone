@@ -1,0 +1,18 @@
+.logo-wrapper {
+  text-align: center;
+  margin: 0 0 50px 0; /* Top Right Bottom Left - reduced bottom margin */
+  width: 100%;
+  height: fit-content;
+}
+
+.logo {
+  width: 200px; /* Adjust based on your logo size */
+  padding-top: 1rem;
+}
+
+/* If you want to add some animation on hover */
+.logo:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+  transition: all 0.2s ease-in-out;
+}

@@ -1,13 +1,20 @@
 import HomePage from "./home/HomePage";
-import Header from "./components/header/Header";
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import LoginPage from "./authentication/LoginPage";
+import DefaultLayout from "./layouts/DefaultLayout";
+import AuthLayout from "./layouts/auth/AuthLayout";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
   return (
     <Router>
-      <Header />
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route element={<DefaultLayout />}>
+          <Route path="/" element={<HomePage />} />
+        </Route>
+
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
       </Routes>
     </Router>
   );
