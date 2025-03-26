@@ -12,10 +12,11 @@ import {
 } from "@fluentui/react-components";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../authentication/AuthContext";
 import "./header.css";
 
 const Header = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoggedIn, logout } = useAuth();
   let navigate = useNavigate();
 
   return (
@@ -37,9 +38,7 @@ const Header = () => {
                 <MenuList>
                   <MenuItem>Profile</MenuItem>
                   <MenuItem>Settings</MenuItem>
-                  <MenuItem onClick={() => setIsLoggedIn(false)}>
-                    Log Out
-                  </MenuItem>
+                  <MenuItem onClick={logout}>Log Out</MenuItem>
                 </MenuList>
               </MenuPopover>
             </Menu>

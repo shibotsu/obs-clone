@@ -7,8 +7,10 @@ import {
   PrimaryButton,
 } from "@fluentui/react";
 import "./Auth.css";
+import { useAuth } from "./AuthContext";
 
 const LoginPage = () => {
+  const { login } = useAuth(); // will be used after implementing the backend
   const [password, setPassword] = useState("");
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
 
@@ -21,14 +23,11 @@ const LoginPage = () => {
       email: isEmail ? usernameOrEmail : null,
       password: password,
     };
-    console.log(
-      "Login data: " +
-        requestData.username +
-        " " +
-        requestData.email +
-        " " +
-        requestData.password
-    );
+
+    const simulatedToken = "some-token";
+
+    login(simulatedToken);
+
     navigate("/");
   };
 
