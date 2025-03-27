@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  TextField,
-  DefaultButton,
-  Stack,
-  PrimaryButton,
-} from "@fluentui/react";
+import { TextField, Stack, PrimaryButton } from "@fluentui/react";
 import "./Auth.css";
 import { useAuth } from "./AuthContext";
 

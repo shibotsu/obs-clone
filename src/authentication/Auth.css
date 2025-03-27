@@ -19,7 +19,7 @@
 
 .login-container .ms-TextField {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .login-container .ms-TextField .ms-TextField-fieldGroup {
@@ -40,4 +40,9 @@
 .login-container .ms-TextField-fieldGroup:focus-within {
   border-color: #0078d4;
   box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.ms-DatePicker-arrow {
+  color: black;
+  background-color: black;
 }

@@ -10,7 +10,6 @@ import {
   FluentProvider,
   webLightTheme,
 } from "@fluentui/react-components";
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../authentication/AuthContext";
 import "./header.css";
@@ -53,7 +52,12 @@ const Header = () => {
               >
                 Log In
               </Button>
-              <Button appearance="outline">Sign Up</Button>
+              <Button
+                appearance="outline"
+                onClick={() => navigate("/register")}
+              >
+                Sign Up
+              </Button>
             </div>
           )}
         </div>
