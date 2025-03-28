@@ -11,7 +11,7 @@ import {
   webLightTheme,
 } from "@fluentui/react-components";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../authentication/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import "./header.css";
 
 const Header = () => {
@@ -35,7 +35,9 @@ const Header = () => {
               </MenuTrigger>
               <MenuPopover>
                 <MenuList>
-                  <MenuItem>Profile</MenuItem>
+                  <MenuItem onClick={() => navigate("/profile")}>
+                    Profile
+                  </MenuItem>
                   <MenuItem>Settings</MenuItem>
                   <MenuItem onClick={logout}>Log Out</MenuItem>
                 </MenuList>
