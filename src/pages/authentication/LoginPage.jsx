@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField, Stack, PrimaryButton } from "@fluentui/react";
 import "./Auth.css";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
   const { login } = useAuth(); // will be used after implementing the backend
