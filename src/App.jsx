@@ -6,24 +6,31 @@ import DefaultLayout from "./layouts/DefaultLayout";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+  FluentProvider,
+  webLightTheme,
+  webDarkTheme,
+} from "@fluentui/react-components";
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route element={<DefaultLayout />}>
-            <Route path="/" element={<HomePage />} />
-          </Route>
+    <FluentProvider theme={webLightTheme}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route element={<DefaultLayout />}>
+              <Route path="/" element={<HomePage />} />
+            </Route>
 
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </FluentProvider>
   );
 };
 
