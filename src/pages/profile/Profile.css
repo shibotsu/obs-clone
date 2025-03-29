@@ -5,7 +5,7 @@
   align-items: flex-start; /* Align at the top */
   min-height: 100vh;
   background-color: #f7f7f7;
-  padding-top: 40px; /* Adds a bit of top spacing */
+  padding-top: 20px; /* Adds a bit of top spacing */
   box-sizing: border-box;
 }
 
@@ -15,8 +15,7 @@
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  width: 40%;
   text-align: center;
 }
 
