@@ -4,13 +4,10 @@ import RegisterPage from "./pages/authentication/RegisterPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import DefaultLayout from "./layouts/DefaultLayout";
 import AuthLayout from "./layouts/auth/AuthLayout";
+import StreamerProfilePage from "./pages/profile/StreamerProfilePage";
 import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import {
-  FluentProvider,
-  webLightTheme,
-  webDarkTheme,
-} from "@fluentui/react-components";
+import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 
 const App = () => {
   return (
@@ -20,6 +17,10 @@ const App = () => {
           <Routes>
             <Route element={<DefaultLayout />}>
               <Route path="/" element={<HomePage />} />
+              <Route
+                path="/streamer-profile"
+                element={<StreamerProfilePage />}
+              />
             </Route>
 
             <Route element={<AuthLayout />}>
