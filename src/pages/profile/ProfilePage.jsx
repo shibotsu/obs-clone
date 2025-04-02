@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Image, Button } from "@fluentui/react-components";
+import { Image } from "@fluentui/react-components";
 import { Text, Stack, DefaultButton } from "@fluentui/react";
 import { useAuth } from "../../context/AuthContext";
 import "./Profile.css";
@@ -57,12 +57,6 @@ const ProfilePage = () => {
     } finally {
       setUploading(false);
     }*/
-  };
-
-  const triggerFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
   };
 
   return (

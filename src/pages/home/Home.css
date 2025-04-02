@@ -37,7 +37,34 @@
 .livestreams-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
   width: 100%;
-  max-width: 1300px;
-  padding: 16px;
+  max-width: 100%;
+  padding: 6px 10px 12px 0px;
+}
+
+.left-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+}
+
+.sidebar-button {
+  margin-left: 0;
+  margin-right: 10px;
+  margin-bottom: 15px;
+  display: inline-flex; /* Force it to stay inline */
+}
+
+.livestreams-text {
+  padding-left: 0;
+  margin-left: 18px;
+  display: inline-flex; /* Ensure text stays inline */
+  align-items: center;
+}
+
+.start-streaming-button {
+  margin-right: 6%;
+  white-space: nowrap;
 }

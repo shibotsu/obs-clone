@@ -2,6 +2,7 @@ import "./Home.css";
 import { Text } from "@fluentui/react";
 import { Button, makeStyles } from "@fluentui/react-components";
 import HomePageStreamItem from "../../components/home-page/HomePageStreamItem";
+import { HomeSideBar } from "../../components/sidebar/HomeSidebar";
 
 const livestreams = [
   {
@@ -100,9 +101,12 @@ const HomePage = () => {
   return (
     <div className="home-container">
       <div className="livestreams-header">
-        <Text variant="xxLarge" className="livestreams-text">
-          Livestreams
-        </Text>
+        <div className="left-group">
+          <HomeSideBar className="sidebar-button" />
+          <Text variant="xxLarge" className="livestreams-text">
+            Livestreams
+          </Text>
+        </div>
         <Button
           shape="rounded"
           appearance="primary"
