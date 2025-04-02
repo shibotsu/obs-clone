@@ -17,6 +17,7 @@ const HomePage = () => {
           Start streaming
         </Button>
       </div>
+      <main className="main-page-container"></main>
     </div>
   );
 };

@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { TextField, Stack, PrimaryButton, DatePicker } from "@fluentui/react";
 import {
-  TextField,
-  Stack,
-  PrimaryButton,
-  DatePicker,
-  Icon,
-} from "@fluentui/react";
+  CheckmarkFilled,
+  ErrorCircleRegular,
+  EyeFilled,
+  EyeOffFilled,
+} from "@fluentui/react-icons";
+import { Link as FluentLink, Text } from "@fluentui/react-components";
 import "./Auth.css";
+import authUseStyles from "./AuthUseStyles";
 
 const RegisterPage = () => {
+  const classes = authUseStyles();
   const [username, setUsername] = useState("");
   const [validUsername, setValidUsername] = useState(false);
 
@@ -24,7 +27,7 @@ const RegisterPage = () => {
 
   // regexes for checking the username/password validity
   const isValidUsername = /^[0-9A-Za-z]{4,16}$/;
-  const isValidPassword = /^(?=.*?[0-9])(?=.*?[A-Za-z]).{8,32}$/;
+  const isValidPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,32}$/;
 
   let navigate = useNavigate();
   const userRef = useRef();
@@ -77,23 +80,27 @@ const RegisterPage = () => {
     const result = isValidUsername.test(username);
     setValidUsername(result);
   }, [username]);
-
+  // check if password is valid
   useEffect(() => {
     const result = isValidPassword.test(password);
     setValidPassword(result);
   }, [password]);
-
+  // render username field icon
   const renderIcon = (isValid, value) => {
-    return isValid && value.length > 0 ? (
-      <Icon
-        iconName="CheckmarkFilled"
-        style={{ color: "green", marginLeft: 8 }}
-      />
+    if (value.length === 0) return null;
+    return isValid > 0 ? (
+      <CheckmarkFilled className={classes.iconCheckmark} />
     ) : (
-      <Icon
-        iconName="ErrorCircleRegular"
-        style={{ color: "red", marginLeft: 8 }}
-      />
+      <ErrorCircleRegular className={classes.iconError} />
+    );
+  };
+
+  const renderConfirmPasswordIcon = () => {
+    if (confirmPassword.length === 0) return null;
+    return confirmPassword === password ? (
+      <CheckmarkFilled className={classes.iconCheckmark} />
+    ) : (
+      <ErrorCircleRegular className={classes.iconError} />
     );
   };
 
@@ -101,11 +108,11 @@ const RegisterPage = () => {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="login-container">
-        <Stack tokens={{ childrenGap: 10 }}>
+      <form onSubmit={handleSubmit} className={classes.loginContainer}>
+        <Stack tokens={{ childrenGap: 10 }} className={classes.stack}>
           <TextField
             componentRef={userRef}
-            className="textfield"
+            className={classes.textfield}
             label="Username"
             value={username}
             onChange={(e, newValue) => setUsername(newValue || "")}
@@ -118,14 +125,23 @@ const RegisterPage = () => {
                 : ""
             }
             onRenderSuffix={() => renderIcon(validUsername, username)}
+            styles={{
+              fieldGroup: { height: "40px !important" },
+              suffix: {
+                backgroundColor: "transparent",
+              },
+            }}
             required
           />
           <TextField
             componentRef={emailRef}
-            className="textfield"
+            className={classes.textfield}
             label="Email"
             value={email}
             onChange={(e, newValue) => setEmail(newValue || "")}
+            styles={{
+              fieldGroup: { height: "40px !important" },
+            }}
             required
           />
           <TextField
@@ -135,19 +151,51 @@ const RegisterPage = () => {
             value={password}
             componentRef={passwordRef}
             onChange={(e, newValue) => setPassword(newValue || "")}
+            aria-invalid={validPassword ? "false" : "true"}
+            errorMessage={
+              password && !validPassword ? (
+                <>
+                  Password must be 8-32 characters. <br />
+                  Must have at least 1 uppercase and 1 lowercase letter. <br />
+                  Must have at least 1 number and 1 special character."
+                </>
+              ) : (
+                ""
+              )
+            }
+            onRenderSuffix={() => renderIcon(validPassword, password)}
+            styles={{
+              fieldGroup: { height: "40px !important" },
+              suffix: {
+                backgroundColor: "transparent",
+              },
+            }}
             required
           />
           <TextField
-            className="textfield"
+            className={classes.textfield}
             label="Confirm Password"
             type="password"
             value={confirmPassword}
             onChange={(e, newValue) => setConfirmPassword(newValue || "")}
+            onRenderSuffix={renderConfirmPasswordIcon}
+            errorMessage={
+              confirmPassword.length > 0 && confirmPassword !== password
+                ? "Must be the same as the password."
+                : ""
+            }
+            styles={{
+              fieldGroup: { height: "40px !important" },
+              suffix: {
+                backgroundColor: "transparent",
+              },
+            }}
             required
           />
           <DatePicker
-            className="date-picker"
+            className={classes.datePicker}
             label="Enter your birthday"
+            placeholder="Select a date..."
             value={birthday}
             onSelectDate={onDateChange}
             maxDate={today}

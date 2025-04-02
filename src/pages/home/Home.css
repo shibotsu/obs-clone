@@ -1,18 +1,17 @@
 .home-container {
-  background-color: #f7f7f7;
   min-height: 100vh;
 }
 
 .livestreams-header {
   display: flex;
-  padding: 1%;
+  padding: 16px 40px 0 44px;
   justify-content: space-between;
 }
 
 .livestreams-text {
-  padding-left: 5%;
+  padding-left: 0;
 }
 
 .start-streaming-button {
-  padding-right: 4%;
+  margin-right: 6%;
 }
