@@ -1,11 +1,9 @@
 .home-container {
   min-height: 100vh;
-}
 
-.livestreams-header {
   display: flex;
-  padding: 16px 40px 0 44px;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
 }
 
 .livestreams-text {
@@ -14,4 +12,32 @@
 
 .start-streaming-button {
   margin-right: 6%;
+  align-self: flex-start;
+}
+
+.main-page-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.livestreams-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(300px, 1fr)
+  ); /* Responsive columns */
+  gap: 16px; /* Spacing between items */
+  justify-content: center;
+  max-width: 1500px; /* Limit width to prevent stretching */
+  margin: 0 auto; /* Center the grid */
+  padding: 12px;
+}
+
+.livestreams-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1300px;
+  padding: 16px;
 }
