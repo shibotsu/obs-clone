@@ -10,21 +10,29 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class SessionController extends Controller
 {
 
-    public function store() {
-        $attributes = request()->validate([
-            'email' => ['required', 'email', 'max:255'],
+    public function store()
+    {
+        $credentials = request()->validate([
+            'login' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 
         try {
-            if (!$token = JWTAuth::attempt($attributes)) {
+            $login_type = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+            if (!$token = JWTAuth::attempt([
+                $login_type => $credentials['login'],
+                'password' => $credentials['password'],
+            ])) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
+
             return response()->json(['token' => $token], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Could not create token'], 500);
         }
     }
+
     public function destroy() {
         try {
             JWTAuth::invalidate(JWTAuth::getToken());
