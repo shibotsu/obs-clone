@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Http\Request;
@@ -12,4 +13,6 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [SessionController::class, 'store']);
 Route::post('/logout', [SessionController::class, 'destroy']);
+Route::middleware('auth:api')->get('/profile', [ProfileController::class, 'show']);
+
 
