@@ -9,7 +9,18 @@ class ProfileController extends Controller
 {
     public function show(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $userData = $user->toArray();
+        $userData['profile_picture'] = $user->profile_picture
+            ? asset('storage/' . $user->profile_picture)
+            : null;
+
+        return response()->json($userData);
     }
 
     public function changePicture(Request $request)
