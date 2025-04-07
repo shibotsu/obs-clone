@@ -26,8 +26,8 @@ class SessionController extends Controller
             ])) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
-
-            return response()->json(['token' => $token], 200);
+            $user = Auth::user();
+            return response()->json(['token' => $token, 'user' => $user], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Could not create token'], 500);
         }

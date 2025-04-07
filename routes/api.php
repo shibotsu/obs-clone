@@ -14,5 +14,5 @@ Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [SessionController::class, 'store']);
 Route::post('/logout', [SessionController::class, 'destroy']);
 Route::middleware('auth:api')->get('/profile', [ProfileController::class, 'show']);
-
+Route::middleware('auth:api')->post('/picture', [ProfileController::class, 'changePicture']);
 
