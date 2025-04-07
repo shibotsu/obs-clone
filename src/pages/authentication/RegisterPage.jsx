@@ -1,13 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { TextField, Stack, PrimaryButton, DatePicker } from "@fluentui/react";
-import {
-  CheckmarkFilled,
-  ErrorCircleRegular,
-  EyeFilled,
-  EyeOffFilled,
-} from "@fluentui/react-icons";
-import { Link as FluentLink, Text } from "@fluentui/react-components";
+import { useNavigate, Link } from "react-router-dom";
+import { TextField, Stack, PrimaryButton } from "@fluentui/react";
+import { CheckmarkFilled, ErrorCircleRegular } from "@fluentui/react-icons";
+import { Text } from "@fluentui/react-components";
+import { DatePicker } from "@fluentui/react-datepicker-compat";
 import "./Auth.css";
 import authUseStyles from "./AuthUseStyles";
 
@@ -34,7 +30,7 @@ const RegisterPage = () => {
   const emailRef = useRef();
   const passwordRef = useRef();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!password || !confirmPassword || !username || !email || !birthday) {
@@ -61,7 +57,43 @@ const RegisterPage = () => {
       return;
     }
 
+    const formattedBirthday = formatBirthday(birthday);
+
+    const requestData = {
+      username: username,
+      email: email,
+      password: password,
+      birthday: formattedBirthday,
+    };
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "pplication/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || "Register failed");
+        return;
+      }
+
+      navigate("/login");
+    } catch (error) {
+      setError("Register failed: " + error);
+    }
+
+    console.log(formatBirthday(birthday));
+
     navigate("/login");
+  };
+
+  const formatBirthday = (birthdayValue) => {
+    const myArray = birthdayValue.toString().split(" ");
+    return myArray[1] + " " + myArray[2] + " " + myArray[3];
   };
 
   const onDateChange = (date) => {
@@ -126,7 +158,7 @@ const RegisterPage = () => {
             }
             onRenderSuffix={() => renderIcon(validUsername, username)}
             styles={{
-              fieldGroup: { height: "40px !important" },
+              fieldGroup: { height: "37px !important" },
               suffix: {
                 backgroundColor: "transparent",
               },
@@ -140,7 +172,7 @@ const RegisterPage = () => {
             value={email}
             onChange={(e, newValue) => setEmail(newValue || "")}
             styles={{
-              fieldGroup: { height: "40px !important" },
+              fieldGroup: { height: "37px !important" },
             }}
             required
           />
@@ -165,7 +197,7 @@ const RegisterPage = () => {
             }
             onRenderSuffix={() => renderIcon(validPassword, password)}
             styles={{
-              fieldGroup: { height: "40px !important" },
+              fieldGroup: { height: "37px !important" },
               suffix: {
                 backgroundColor: "transparent",
               },
@@ -185,7 +217,7 @@ const RegisterPage = () => {
                 : ""
             }
             styles={{
-              fieldGroup: { height: "40px !important" },
+              fieldGroup: { height: "37px !important" },
               suffix: {
                 backgroundColor: "transparent",
               },
@@ -207,6 +239,12 @@ const RegisterPage = () => {
             type="submit"
             className="custom-primary-button"
           />
+          <div className={classes.alreadyRegistered}>
+            <Text>Already registered?</Text>
+            <Link className={classes.link} to={"/login"}>
+              Sign In
+            </Link>
+          </div>
         </Stack>
       </form>
     </div>

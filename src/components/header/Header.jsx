@@ -1,6 +1,5 @@
 import {
   Button,
-  Input,
   Menu,
   MenuTrigger,
   MenuPopover,
@@ -9,14 +8,24 @@ import {
   Avatar,
   FluentProvider,
   webLightTheme,
+  SearchBox,
+  makeStyles,
 } from "@fluentui/react-components";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "./header.css";
 
+const useStyles = makeStyles({
+  searchBox: {
+    width: "80%",
+    maxWidth: "350px",
+  },
+});
+
 const Header = () => {
   const { isLoggedIn, logout } = useAuth();
   let navigate = useNavigate();
+  const classes = useStyles();
 
   return (
     <FluentProvider theme={webLightTheme}>
@@ -25,7 +34,10 @@ const Header = () => {
           <img className="logo" src="logo.png" alt="Logo" />
         </Link>
 
-        <Input placeholder="Search streams..." className="search-bar" />
+        <SearchBox
+          className={classes.searchBox}
+          placeholder="Search streams..."
+        />
 
         <div className="auth-container">
           {isLoggedIn ? (
