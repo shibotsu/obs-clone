@@ -63,6 +63,7 @@ const ProfilePage = () => {
     <div className="profile-container">
       <Stack tokens={{ childrenGap: 20 }} className="profile-card">
         <div className="profile-pic-container">
+          {console.log(token)}
           <Image
             src={profilePic || "profile_pic_placeholder.png"}
             shape="circular"

@@ -23,11 +23,13 @@ const authUseStyles = makeStyles({
   },
   // Styles for the TextField component
   textfield: {
-    fieldGroup: { height: "60px !important" },
     width: "100%",
     marginBottom: "6px",
     // Nested selectors for the TextField's internal elements
     selectors: {
+      "& .ms-TextField-fieldGroup": {
+        height: "44px !important",
+      },
       "& label": {
         fontWeight: 600,
         marginBottom: "8px",
@@ -40,9 +42,8 @@ const authUseStyles = makeStyles({
   },
   // Styles for buttons (applied to components with a custom class)
   button: {
-    width: "30%",
-    height: "44px",
-    marginTop: "10px",
+    width: "100%",
+    marginTop: "80px",
   },
   // Override for the DatePicker arrow if needed
   datePickerArrow: {
@@ -60,7 +61,16 @@ const authUseStyles = makeStyles({
   datePicker: {
     maxWidth: "150px",
     maxHeight: "35px",
-    marginBottom: "50px",
+    marginBottom: "15px",
+  },
+  alreadyRegistered: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  link: {
+    marginLeft: "6px",
   },
 });
 
