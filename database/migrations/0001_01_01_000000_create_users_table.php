@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('birthday');
             $table->string('password');
             $table->bigInteger('followers')->default(0);
+            $table->string('profile_picture')->default('none');
             $table->rememberToken();
             $table->timestamps();
         });
