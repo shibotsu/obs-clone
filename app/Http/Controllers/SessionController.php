@@ -27,6 +27,9 @@ class SessionController extends Controller
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
             $user = Auth::user();
+            $user->profile_picture = $user->profile_picture
+                ? asset('storage/' . $user->profile_picture)
+                : null;
             return response()->json(['token' => $token, 'user' => $user], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Could not create token'], 500);
