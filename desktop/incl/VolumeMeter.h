@@ -10,6 +10,7 @@ class VolumeMeter : public QWidget
 public:
     VolumeMeter(QWidget* parent = nullptr, const QString& label = "Volume");
     void setLevel(float dbLevel); // range: -60.0 to 0.0 dB
+    float getCurrentLevel() const { return m_currentLevel; }
 
 protected:
     void paintEvent(QPaintEvent* event) override;

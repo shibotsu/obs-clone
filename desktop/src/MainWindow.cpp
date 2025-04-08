@@ -103,14 +103,25 @@ void MainWindow::setupUi()
     m_fpsUpdateTimer.start();
 
     // Custom volume meter layout
-    QHBoxLayout* volumeMeterLayout = new QHBoxLayout();
+    QVBoxLayout* inputLayout = new QVBoxLayout();
     m_inputMeter = new VolumeMeter(this, "Mic/Aux");
+    m_inputDbLabel = new QLabel("-60 dB", this); // initial value
+    m_inputDbLabel->setAlignment(Qt::AlignCenter);
+    inputLayout->addWidget(m_inputMeter);
+    inputLayout->addWidget(m_inputDbLabel);
+
+    QVBoxLayout* outputLayout = new QVBoxLayout();
     m_outputMeter = new VolumeMeter(this, "Desktop Audio");
+    m_outputDbLabel = new QLabel("-60 dB", this);
+    m_outputDbLabel->setAlignment(Qt::AlignCenter);
+    outputLayout->addWidget(m_outputMeter);
+    outputLayout->addWidget(m_outputDbLabel);
 
-    volumeMeterLayout->addWidget(m_inputMeter);
-    volumeMeterLayout->addWidget(m_outputMeter);
+    QHBoxLayout* volumeMeterLayout = new QHBoxLayout();
+    volumeMeterLayout->addLayout(inputLayout);
+    volumeMeterLayout->addLayout(outputLayout);
 
-    // Add meters below latency/FPS
+    // Add meters with dB labels
     mainLayout->addLayout(volumeMeterLayout);
 }
 
@@ -152,11 +163,17 @@ void MainWindow::updateAudioVolume()
     float inputLevel = m_audioCapture.getInputVolume();
     float outputLevel = m_audioCapture.getOutputVolume();
 
-    if (m_inputMeter)
+    if (m_inputMeter) {
         m_inputMeter->setLevel(inputLevel);
+        if (m_inputDbLabel)
+            m_inputDbLabel->setText(QString::number(inputLevel, 'f', 1) + " dB");
+    }
 
-    if (m_outputMeter)
+    if (m_outputMeter) {
         m_outputMeter->setLevel(outputLevel);
+        if (m_outputDbLabel)
+            m_outputDbLabel->setText(QString::number(outputLevel, 'f', 1) + " dB");
+    }
 }
 
 void MainWindow::updateFPS()

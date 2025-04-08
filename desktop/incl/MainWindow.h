@@ -41,6 +41,9 @@ private:
     VolumeMeter* m_inputMeter = nullptr;   // Mic/Aux
     VolumeMeter* m_outputMeter = nullptr;  // Desktop Audio
 
+    QLabel* m_inputDbLabel = nullptr;
+    QLabel* m_outputDbLabel = nullptr;
+
     // FPS and metrics tracking
     QTimer m_fpsUpdateTimer;
     qint64 m_lastFrameTime;
