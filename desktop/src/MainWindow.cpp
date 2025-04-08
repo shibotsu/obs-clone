@@ -101,6 +101,17 @@ void MainWindow::setupUi()
     m_fpsUpdateTimer.setInterval(1000);
     connect(&m_fpsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateFPS);
     m_fpsUpdateTimer.start();
+
+    // Custom volume meter layout
+    QHBoxLayout* volumeMeterLayout = new QHBoxLayout();
+    m_inputMeter = new VolumeMeter(this, "Mic/Aux");
+    m_outputMeter = new VolumeMeter(this, "Desktop Audio");
+
+    volumeMeterLayout->addWidget(m_inputMeter);
+    volumeMeterLayout->addWidget(m_outputMeter);
+
+    // Add meters below latency/FPS
+    mainLayout->addLayout(volumeMeterLayout);
 }
 
 void MainWindow::updateScreenCapture()
@@ -138,7 +149,14 @@ void MainWindow::updateScreenCapture()
 
 void MainWindow::updateAudioVolume()
 {
-    float volume = m_audioCapture.getCurrentVolume();
+    float inputLevel = m_audioCapture.getInputVolume();
+    float outputLevel = m_audioCapture.getOutputVolume();
+
+    if (m_inputMeter)
+        m_inputMeter->setLevel(inputLevel);
+
+    if (m_outputMeter)
+        m_outputMeter->setLevel(outputLevel);
 }
 
 void MainWindow::updateFPS()
