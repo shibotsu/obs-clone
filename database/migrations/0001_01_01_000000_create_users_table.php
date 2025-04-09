@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('birthday');
             $table->string('password');
-            $table->bigInteger('followers')->default(0);
-            $table->string('profile_picture')->default('none');
+            $table->bigInteger('number_of_followers')->default(0);
+            $table->string('profile_picture')->default(null);
             $table->rememberToken();
             $table->timestamps();
         });
