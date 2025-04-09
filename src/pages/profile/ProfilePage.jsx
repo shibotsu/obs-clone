@@ -1,18 +1,29 @@
-import { useState, useRef } from "react";
-import { Image } from "@fluentui/react-components";
+import { useState, useRef, useEffect } from "react";
+import { Image, Spinner, makeStyles } from "@fluentui/react-components";
 import { Text, Stack, DefaultButton } from "@fluentui/react";
 import { useAuth } from "../../context/AuthContext";
 import "./Profile.css";
 
-const ProfilePage = () => {
-  const { token } = useAuth();
-  const [profilePic, setProfilePic] = useState(null);
-  const [followers, setFollowers] = useState(120);
-  const [uploading, setUploading] = useState(false);
+const useSyles = makeStyles({
+  profilePic: {
+    objectFit: "cover", // Ensures the image covers the container without stretching
+  },
+});
 
-  const username = "JohnDoe";
-  const email = "johndoe@gmail.com";
+const ProfilePage = () => {
+  const { user, token, setUser } = useAuth();
+  const [error, setError] = useState("");
+  const [profilePic, setProfilePic] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const fileInputRef = useRef(null);
+
+  const profilePicture =
+    user.profile_picture === "none"
+      ? "profile_pic_placeholder.png"
+      : user.profile_picture;
+  const username = user?.username || "";
+  const email = user?.email || "";
+  const followers = user?.followers || 0;
 
   const handleProfilePicChange = async (event) => {
     const file = event.target.files[0];
@@ -29,18 +40,17 @@ const ProfilePage = () => {
       return;
     }
 
-    const imageUrl = URL.createObjectURL(file);
-
-    setProfilePic(imageUrl);
-
-    /*setUploading(true);
+    setLoadingProfile(true);
 
     try {
       const formData = new FormData();
-      formData.append("profilePic", file);
+      formData.append("profile_picture", file);
 
-      const response = await fetch("https://example.com/api/uploadProfiePic", {
+      const response = await fetch("http://127.0.0.1:8000/api/picture", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -50,51 +60,63 @@ const ProfilePage = () => {
 
       const data = await response.json();
 
-      const imageUrl = data.imageUrl || URL.createObjectURL(file);
+      const imageUrl = data.profile_picture || URL.createObjectURL(file);
+
+      const updatedUser = { ...user, profile_picture: imageUrl };
+      setUser(updatedUser);
+
       setProfilePic(imageUrl);
     } catch (error) {
       alert("Error uploading image: " + error.message);
     } finally {
-      setUploading(false);
-    }*/
+      setLoadingProfile(false);
+    }
   };
 
+  const classes = useSyles();
   return (
     <div className="profile-container">
-      <Stack tokens={{ childrenGap: 20 }} className="profile-card">
-        <div className="profile-pic-container">
-          {console.log(token)}
-          <Image
-            src={profilePic || "profile_pic_placeholder.png"}
-            shape="circular"
-            alt="Profile picture"
-            width={150}
-            height={150}
-            className="profile-pic"
-          />
-          <input
-            type="file"
-            accept="image/*"
-            className="file-input"
-            ref={fileInputRef}
-            onChange={handleProfilePicChange}
-          />
-          <DefaultButton
-            text="Change Picture"
-            onClick={() => fileInputRef.current.click()}
-            className="change-pic-btn"
-          />
+      {console.log(JSON.stringify(user))}
+      {console.log(JSON.parse(localStorage.getItem("user")))}
+      {loadingProfile ? (
+        <div className="spinner-container">
+          <Spinner />
         </div>
-        <Text variant="xxLarge" className="profile-username">
-          {username}
-        </Text>
-        <Text variant="large" className="email-text">
-          {email}
-        </Text>
-        <Text variant="medium" className="follower-count">
-          Followers: {followers}
-        </Text>
-      </Stack>
+      ) : (
+        <Stack tokens={{ childrenGap: 20 }} className="profile-card">
+          <div className="profile-pic-container">
+            <Image
+              src={profilePicture}
+              shape="circular"
+              alt="Profile picture"
+              width={150}
+              height={150}
+              className={classes.profilePic}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              className="file-input"
+              ref={fileInputRef}
+              onChange={handleProfilePicChange}
+            />
+            <DefaultButton
+              text="Change Picture"
+              onClick={() => fileInputRef.current.click()}
+              className="change-pic-btn"
+            />
+          </div>
+          <Text variant="xxLarge" className="profile-username">
+            {username}
+          </Text>
+          <Text variant="large" className="email-text">
+            {email}
+          </Text>
+          <Text variant="medium" className="follower-count">
+            Followers: {followers}
+          </Text>
+        </Stack>
+      )}
     </div>
   );
 };

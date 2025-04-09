@@ -47,10 +47,10 @@ const LoginPage = () => {
 
       // parsing the JSON response
       const data = await response.json();
-      const jwtToken = data.token;
+      const { token, user } = data;
 
-      login(jwtToken);
-      console.log(jwtToken);
+      login(token, user);
+      console.log(JSON.stringify(user));
       navigate("/");
     } catch (error) {
       setError("Login failed: " + error);

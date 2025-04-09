@@ -16,6 +16,7 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   width: 40%;
+  min-width: 280px;
   text-align: center;
 }
 
@@ -56,6 +57,10 @@
   margin-bottom: 20px;
 }
 
-.profile-pic {
-  border-radius: 50% !important;
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 12rem;
 }

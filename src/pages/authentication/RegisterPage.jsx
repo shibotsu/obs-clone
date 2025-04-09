@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { TextField, Stack, PrimaryButton } from "@fluentui/react";
 import { CheckmarkFilled, ErrorCircleRegular } from "@fluentui/react-icons";
-import { Text } from "@fluentui/react-components";
+import { Text, Spinner } from "@fluentui/react-components";
 import { DatePicker } from "@fluentui/react-datepicker-compat";
 import "./Auth.css";
 import authUseStyles from "./AuthUseStyles";
@@ -20,6 +20,7 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthday, setBirthday] = useState(null);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // regexes for checking the username/password validity
   const isValidUsername = /^[0-9A-Za-z]{4,16}$/;
@@ -32,6 +33,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (!password || !confirmPassword || !username || !email || !birthday) {
       setError("All fields are required.");
@@ -70,7 +72,7 @@ const RegisterPage = () => {
       const response = await fetch("http://127.0.0.1:8000/api/register", {
         method: "POST",
         headers: {
-          "Content-Type": "pplication/json",
+          "Content-Type": "aplication/json",
         },
         body: JSON.stringify(requestData),
       });
@@ -84,6 +86,8 @@ const RegisterPage = () => {
       navigate("/login");
     } catch (error) {
       setError("Register failed: " + error);
+    } finally {
+      setIsLoading(false);
     }
 
     console.log(formatBirthday(birthday));
@@ -234,11 +238,16 @@ const RegisterPage = () => {
             required
           />
           {error && <p style={{ color: "red" }}>{error}</p>}
-          <PrimaryButton
-            text="Sign Up"
-            type="submit"
-            className="custom-primary-button"
-          />
+          {isLoading ? (
+            <Spinner />
+          ) : (
+            <PrimaryButton
+              text="Sign Up"
+              type="submit"
+              className="custom-primary-button"
+              disabled={!(validUsername && validPassword)}
+            />
+          )}
           <div className={classes.alreadyRegistered}>
             <Text>Already registered?</Text>
             <Link className={classes.link} to={"/login"}>

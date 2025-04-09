@@ -3,7 +3,7 @@ import "./AuthLayout.css"; // Make sure this import is correct
 
 const AuthLayout = () => {
   return (
-    <div>
+    <div className="header">
       <div className="logo-wrapper">
         <Link to="/">
           <img className="logo" src="logo.png" alt="Logo" />
