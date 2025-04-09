@@ -20,19 +20,25 @@ const useStyles = makeStyles({
     width: "80%",
     maxWidth: "350px",
   },
+  logoLink: {
+    display: "inline-block",
+  },
 });
 
 const Header = () => {
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
   let navigate = useNavigate();
   const classes = useStyles();
 
   return (
     <FluentProvider theme={webLightTheme}>
       <header>
-        <Link to="/">
-          <img className="logo" src="logo.png" alt="Logo" />
-        </Link>
+        <img
+          onClick={() => navigate("/")}
+          className="logo"
+          src="logo.png"
+          alt="Logo"
+        />
 
         <SearchBox
           className={classes.searchBox}
@@ -43,7 +49,20 @@ const Header = () => {
           {isLoggedIn ? (
             <Menu>
               <MenuTrigger disableButtonEnhancement style={{}}>
-                <Avatar name="User" size={32} className="avatar" />
+                <Avatar
+                  name="User"
+                  size={32}
+                  className="avatar"
+                  image={
+                    user?.profile_picture && user.profile_picture !== "none"
+                      ? {
+                          src: user.profile_picture,
+                        }
+                      : {
+                          src: "profile_pic_placeholder.png",
+                        }
+                  }
+                />
               </MenuTrigger>
               <MenuPopover>
                 <MenuList>
