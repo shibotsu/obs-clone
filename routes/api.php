@@ -22,5 +22,6 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/unfollow/{id}', [ProfileController::class, 'unfollow']);
     Route::get('/{id}/followers', [ProfileController::class, 'followers']);
     Route::get('/following', [ProfileController::class, 'following']);
+    Route::get('/isfollowing/{id}', [ProfileController::class, 'isFollowing']);
 });
 
