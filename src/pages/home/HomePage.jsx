@@ -3,6 +3,7 @@ import { Text } from "@fluentui/react";
 import { Button, makeStyles } from "@fluentui/react-components";
 import { HomeSideBar } from "../../components/sidebar/HomeSidebar";
 import HomeLiveStreams from "../../components/home-page/livestreams/HomeLiveStreams";
+import MostFollowedStreamers from "../../components/home-page/most-followed/MostFollowedStreamers";
 
 /* const useStyles = makeStyles({
   livestreamsGrid: {
@@ -41,6 +42,7 @@ const HomePage = () => {
       </div>
       <main className="main-page-container">
         <HomeLiveStreams />
+        <MostFollowedStreamers />
       </main>
     </div>
   );
