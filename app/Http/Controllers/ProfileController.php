@@ -109,6 +109,11 @@ class ProfileController extends Controller
     public function following()
     {
         $following = auth()->user()->following;
+        foreach ($following as $follow) {
+            $follow->profile_picture = $follow->profile_picture
+                ? asset('storage/' . $follow->profile_picture)
+                : null;
+        }
         return response()->json(["following" => $following]);
     }
     public function mostFollowed() {
