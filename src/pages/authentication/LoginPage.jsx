@@ -47,6 +47,9 @@ const LoginPage = () => {
 
       // parsing the JSON response
       const data = await response.json();
+      {
+        console.log(JSON.stringify(data));
+      }
       const { token, user } = data;
 
       login(token, user);
