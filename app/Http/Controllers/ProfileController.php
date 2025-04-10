@@ -120,4 +120,19 @@ class ProfileController extends Controller
 
         return response()->json(["users" => $users]);
     }
+    public function isFollowing($id)
+    {
+        $userToCheck = User::find($id);
+
+        if (!$userToCheck) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $isFollowing = auth()->user()
+            ->following()
+            ->where('following_id', $userToCheck->id)
+            ->exists();
+
+        return response()->json(['isFollowing' => $isFollowing]);
+    }
 }
