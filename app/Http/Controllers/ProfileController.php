@@ -112,7 +112,7 @@ class ProfileController extends Controller
         return response()->json(["following" => $following]);
     }
     public function mostFollowed() {
-        $users = User::orderByDesc('number_of_followers')->take(8)->get(['id', 'username', 'number_of_followers', 'profile_picture']);
+        $users = User::orderByDesc('number_of_followers')->take(20)->get(['id', 'username', 'number_of_followers', 'profile_picture']);
         foreach ($users as $user) {
             $user->profile_picture = $user->profile_picture
                 ? asset('storage/' . $user->profile_picture)
