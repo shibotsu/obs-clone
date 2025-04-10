@@ -12,18 +12,17 @@ const useSyles = makeStyles({
 
 const ProfilePage = () => {
   const { user, token, setUser } = useAuth();
-  const [error, setError] = useState("");
   const [profilePic, setProfilePic] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const fileInputRef = useRef(null);
 
   const profilePicture =
-    user.profile_picture === "none"
+    user.profile_picture === "none" || user.profile_picture.endsWith("/none")
       ? "profile_pic_placeholder.png"
       : user.profile_picture;
   const username = user?.username || "";
   const email = user?.email || "";
-  const followers = user?.followers || 0;
+  const followers = user?.number_of_followers || 0;
 
   const handleProfilePicChange = async (event) => {
     const file = event.target.files[0];

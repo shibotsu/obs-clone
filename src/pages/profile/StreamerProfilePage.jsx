@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FollowButton } from "../../components/follow-button/FollowButton";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Image, Spinner } from "@fluentui/react-components";
@@ -53,6 +54,7 @@ const StreamerProfilePage = () => {
         <Text variant="medium" className="follower-count">
           Followers: {number_of_followers ?? 0}
         </Text>
+        <FollowButton id={id} />
       </Stack>
     </div>
   );

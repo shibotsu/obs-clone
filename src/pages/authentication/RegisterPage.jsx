@@ -83,6 +83,10 @@ const RegisterPage = () => {
         return;
       }
 
+      const data = await response.json();
+
+      console.log(data);
+
       navigate("/login");
     } catch (error) {
       setError("Register failed: " + error);
