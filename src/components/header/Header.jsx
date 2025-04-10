@@ -51,7 +51,7 @@ const Header = () => {
               <MenuTrigger disableButtonEnhancement style={{}}>
                 <Avatar
                   name="User"
-                  size={32}
+                  size={34}
                   className="avatar"
                   image={
                     user?.profile_picture && user.profile_picture !== "none"
