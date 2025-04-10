@@ -92,6 +92,7 @@ class ProfileController extends Controller
         }
         auth()->user()->following()->detach($user->id);
         $user->number_of_followers--;
+        $user->save();
         return response()->json(['message' => 'Unfollowed successfully']);
     }
 
