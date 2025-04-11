@@ -5,10 +5,18 @@ use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MessageController;
+use Illuminate\Support\Facades\Broadcast;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Broadcast::channel('chat.{receiverId}', function ($user, $receiverId) {
+    // Omogući korisniku pristup vlastitom kanalu
+    return (int) $user->id === (int) $receiverId;
+});
+
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [SessionController::class, 'store']);
@@ -23,5 +31,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/{id}/followers', [ProfileController::class, 'followers']);
     Route::get('/following', [ProfileController::class, 'following']);
     Route::get('/isfollowing/{id}', [ProfileController::class, 'isFollowing']);
+    Route::post('/messages', [MessageController::class, 'store']);
 });
+
+
+
+
+
 
