@@ -10,6 +10,8 @@ import {
   useRestoreFocusSource,
   useRestoreFocusTarget,
 } from "@fluentui/react-components";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
 import { Dismiss24Regular, Navigation20Filled } from "@fluentui/react-icons";
 import FollowingSidebarItem from "./FollowingSidebarItem";
 
@@ -88,6 +90,21 @@ const useStyles = makeStyles({
 });
 
 export const HomeSideBar = () => {
+  const { token } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryFn: () =>
+      fetch("http://127.0.0.1:8000/api/following", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }).then((res) => res.json()),
+    queryKey: ["followingUsers"],
+  });
+
+  const following = data?.following || [];
+
   const styles = useStyles();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -96,6 +113,8 @@ export const HomeSideBar = () => {
   // unless (as in the case of some inline drawers, you do not want automatic focus restoration)
   const restoreFocusTargetAttributes = useRestoreFocusTarget();
   const restoreFocusSourceAttributes = useRestoreFocusSource();
+
+  console.log(JSON.stringify(following));
 
   return (
     <div className={styles.root}>
@@ -123,11 +142,11 @@ export const HomeSideBar = () => {
         </DrawerHeader>
 
         <DrawerBody>
-          {channels.map((channel) => (
+          {following.map((channel) => (
             <FollowingSidebarItem
               id={channel.id}
-              avatar={channel.avatar}
-              name={channel.name}
+              avatar={channel.profile_picture}
+              name={channel.username}
             />
           ))}
         </DrawerBody>
