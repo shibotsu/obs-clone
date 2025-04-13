@@ -50,7 +50,7 @@ const Header = () => {
             <Menu>
               <MenuTrigger disableButtonEnhancement style={{}}>
                 <Avatar
-                  name="User"
+                  name={user?.username}
                   size={34}
                   className="avatar"
                   image={
