@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\SessionController;
@@ -25,6 +26,7 @@ Route::middleware('auth:api')->get('/profile', [ProfileController::class, 'show'
 Route::middleware('auth:api')->post('/picture', [ProfileController::class, 'changePicture']);
 Route::get('/profile/{id}',  [ProfileController::class, 'channel']);
 Route::get('/most_followed',  [ProfileController::class, 'mostFollowed']);
+Route::get('/search', [ChannelController::class, 'search']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/follow/{id}', [ProfileController::class, 'follow']);
     Route::delete('/unfollow/{id}', [ProfileController::class, 'unfollow']);
