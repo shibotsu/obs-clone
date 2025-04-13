@@ -39,12 +39,17 @@ const useStyles = makeStyles({
 const FollowingSidebarItem = ({ id, avatar, name }) => {
   const classes = useStyles();
 
+  const image =
+    avatar === "none" || avatar.endsWith("none")
+      ? "profile_pic_placeholder.png"
+      : avatar;
+
   return (
     <Link className={classes.link} to={`/streamer-profile/${id}`}>
       <div className={classes.item}>
         <Image
-          src={avatar || "profile_pic_placeholder.png"}
-          fit="contain"
+          src={image}
+          fit="cover"
           shape="circular"
           className={classes.image}
         />
