@@ -5,6 +5,7 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import DefaultLayout from "./layouts/DefaultLayout";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import StreamerProfilePage from "./pages/profile/StreamerProfilePage";
+import SearchResultsPage from "./pages/search-results/SearchResultsPage";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
@@ -25,6 +26,7 @@ const App = () => {
                   path="/streamer-profile/:id"
                   element={<StreamerProfilePage />}
                 />
+                <Route path="/search-results" element={<SearchResultsPage />} />
               </Route>
 
               <Route element={<AuthLayout />}>
