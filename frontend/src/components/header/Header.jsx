@@ -67,7 +67,9 @@ const Header = () => {
                   <MenuItem onClick={() => navigate("/profile")}>
                     Profile
                   </MenuItem>
-                  <MenuItem>Settings</MenuItem>
+                  <MenuItem onClick={() => navigate("/settings")}>
+                    Settings
+                  </MenuItem>
                   <MenuItem onClick={logout}>Log Out</MenuItem>
                 </MenuList>
               </MenuPopover>
