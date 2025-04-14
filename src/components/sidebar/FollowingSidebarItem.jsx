@@ -10,6 +10,8 @@ const useStyles = makeStyles({
     width: "100%",
     marginBottom: "1px",
     borderRadius: "8px",
+	justifyContent: "center",
+	gap: "4px"
   },
   image: {
     maxWidth: "35px",
@@ -18,7 +20,6 @@ const useStyles = makeStyles({
     margin: "8px",
     position: "relative",
     left: "0px",
-    marginRight: "12px",
   },
   link: {
     textDecoration: "none",
@@ -36,7 +37,7 @@ const useStyles = makeStyles({
   },
 });
 
-const FollowingSidebarItem = ({ id, avatar, name }) => {
+const FollowingSidebarItem = ({ id, avatar, name = null }) => {
   const classes = useStyles();
 
   return (
@@ -48,7 +49,7 @@ const FollowingSidebarItem = ({ id, avatar, name }) => {
           shape="circular"
           className={classes.image}
         />
-        <Text variant="medium">{name}</Text>
+        { name && <Text variant="medium">{name}</Text> }
       </div>
     </Link>
   );
