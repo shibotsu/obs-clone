@@ -1,0 +1,28 @@
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 20px 12px;
+  color: "white";
+}
+
+.logo {
+  min-width: 50px;
+  max-width: 150px;
+  color: white;
+  text-decoration: none;
+  margin-right: 1rem;
+}
+
+.avatar {
+  cursor: pointer;
+  display: flex;
+  justify-content: end;
+}
+
+.auth-container {
+  width: 220px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

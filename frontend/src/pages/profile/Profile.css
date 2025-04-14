@@ -1,0 +1,66 @@
+/* Positions the card near the top by aligning items to flex-start */
+.profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Align at the top */
+  min-height: 100vh;
+  background-color: #f7f7f7;
+  padding-top: 20px; /* Adds a bit of top spacing */
+  box-sizing: border-box;
+}
+
+/* Card styling for a modern look */
+.profile-card {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 40%;
+  min-width: 280px;
+  text-align: center;
+}
+
+/* Organize the picture and button in a column */
+.profile-pic-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Hide the file input */
+.file-input {
+  display: none;
+}
+
+/* Button styling (optional, can be overridden by Fluent UI) */
+.change-pic-btn {
+  margin-top: 0; /* Ensure no extra margin above the button */
+}
+
+/* Username styling */
+.profile-username {
+  margin: 10px 0 5px;
+  font-weight: 600;
+}
+
+/* Email styling */
+.email-text {
+  color: #666;
+  margin-bottom: 15px;
+}
+
+/* Follower count styling */
+.follower-count {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 12rem;
+}
