@@ -1,0 +1,33 @@
+.logo-wrapper {
+  text-align: center;
+  padding: 0 0 20px 0; /* Top Right Bottom Left - reduced bottom margin */
+  width: 100%;
+  height: fit-content;
+}
+
+.logo {
+  width: 40% !important; /* Adjust based on your logo size */
+  height: auto;
+  padding-top: 1rem;
+}
+
+/* Override when screen width is below 768px */
+@media (max-width: 768px) {
+  .logo {
+    width: 150px !important; /* Slightly smaller, but not too small */
+  }
+}
+
+/* For an even smaller screen, you can set another breakpoint */
+@media (max-width: 480px) {
+  .logo {
+    width: 100px !important;
+  }
+}
+
+/* If you want to add some animation on hover */
+.logo:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+  transition: all 0.2s ease-in-out;
+}

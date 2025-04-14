@@ -1,0 +1,71 @@
+.home-container {
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.livestreams-text {
+  padding-left: 0;
+}
+
+.start-streaming-button {
+  margin-right: 6%;
+  align-self: flex-start;
+}
+
+.main-page-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+}
+
+.livestreams-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(300px, 1fr)
+  ); /* Responsive columns */
+  gap: 16px; /* Spacing between items */
+  justify-content: center;
+  max-width: 1500px; /* Limit width to prevent stretching */
+  margin: 0 auto; /* Center the grid */
+  padding: 12px;
+}
+
+.livestreams-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 100%;
+  padding: 0px 10px 12px 0px;
+}
+
+.left-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+}
+
+.sidebar-button {
+  margin-left: 0;
+  margin-right: 10px;
+  margin-bottom: 15px;
+  display: inline-flex; /* Force it to stay inline */
+}
+
+.livestreams-text {
+  padding-left: 0;
+  margin-left: 18px;
+  display: inline-flex; /* Ensure text stays inline */
+  align-items: center;
+}
+
+.start-streaming-button {
+  margin-right: 6%;
+  white-space: nowrap;
+}
