@@ -13,6 +13,7 @@ import {
 } from "@fluentui/react-components";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { SearchBar } from "./search-bar/SearchBar";
 import "./header.css";
 
 const useStyles = makeStyles({
@@ -40,10 +41,7 @@ const Header = () => {
           alt="Logo"
         />
 
-        <SearchBox
-          className={classes.searchBox}
-          placeholder="Search streams..."
-        />
+        <SearchBar />
 
         <div className="auth-container">
           {isLoggedIn ? (

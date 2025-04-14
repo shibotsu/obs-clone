@@ -9,6 +9,7 @@ import "./Profile.css";
 
 const StreamerProfilePage = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryFn: () =>
       fetch(`http://127.0.0.1:8000/api/profile/${id}`, {
@@ -54,7 +55,8 @@ const StreamerProfilePage = () => {
         <Text variant="medium" className="follower-count">
           Followers: {number_of_followers ?? 0}
         </Text>
-        <FollowButton id={id} />
+        {console.log("Context: " + user.id + ", Received: " + id)}
+        {user.id === Number(id) ? null : <FollowButton id={id} />}
       </Stack>
     </div>
   );

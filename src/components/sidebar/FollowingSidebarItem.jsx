@@ -36,7 +36,7 @@ const useStyles = makeStyles({
   },
 });
 
-const FollowingSidebarItem = ({ id, avatar, name }) => {
+const FollowingSidebarItem = ({ id, avatar, name, onClick = null }) => {
   const classes = useStyles();
 
   const image =
@@ -45,7 +45,11 @@ const FollowingSidebarItem = ({ id, avatar, name }) => {
       : avatar;
 
   return (
-    <Link className={classes.link} to={`/streamer-profile/${id}`}>
+    <Link
+      className={classes.link}
+      to={`/streamer-profile/${id}`}
+      onClick={onClick}
+    >
       <div className={classes.item}>
         <Image
           src={image}
