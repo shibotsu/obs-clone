@@ -26,7 +26,7 @@ const App = () => {
                   path="/streamer-profile/:id"
                   element={<StreamerProfilePage />}
                 />
-                <Route path="/watch-test" element={<WatchPage />} />
+                <Route path="/watch-test" element={ <WatchPage />} />
               </Route>
 
               <Route element={<AuthLayout />}>
