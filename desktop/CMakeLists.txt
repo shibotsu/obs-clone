@@ -2,7 +2,7 @@
 project(obs)
 
 # Set Qt installation path
-set(CMAKE_PREFIX_PATH "H:/Qt/6.9.0/msvc2022_64")
+set(CMAKE_PREFIX_PATH "D:/Qt/6.10.0/msvc2022_64")
 
 # Set C++ Standard
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -19,7 +19,7 @@ if (NOT Qt6_FOUND)
 endif()
 
 # Add source files
-add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h "src/AudioCapture.cpp" "incl/AudioCapture.h")
+add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h "src/AudioCapture.cpp" "incl/AudioCapture.h" "incl/VolumeMeter.h" "src/VolumeMeter.cpp")
 
 # Link libraries
 target_link_libraries(obs Qt::Core Qt::Gui Qt::Widgets d3d11 dxgi)
