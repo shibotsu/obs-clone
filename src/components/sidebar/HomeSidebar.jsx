@@ -153,14 +153,16 @@ export const HomeSideBar = () => {
       </Drawer>
 
       <div className={styles.content}>
-        <Button
-          {...restoreFocusTargetAttributes}
-          appearance="primary"
-          onClick={() => setIsOpen(!isOpen)}
-          className={styles.sidebarButton}
-        >
-          <Navigation20Filled />
-        </Button>
+        {token && (
+          <Button
+            {...restoreFocusTargetAttributes}
+            appearance="primary"
+            onClick={() => setIsOpen(!isOpen)}
+            className={styles.sidebarButton}
+          >
+            <Navigation20Filled />
+          </Button>
+        )}
       </div>
     </div>
   );
