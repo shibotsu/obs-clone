@@ -1,0 +1,13 @@
+body {
+    padding: 0px;
+}
+
+.scroll-hidden {
+    overflow-y: scroll;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scroll-hidden::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
