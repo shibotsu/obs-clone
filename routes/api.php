@@ -26,13 +26,17 @@ Route::middleware('auth:api')->get('/profile', [ProfileController::class, 'show'
 Route::middleware('auth:api')->post('/picture', [ProfileController::class, 'changePicture']);
 Route::get('/profile/{id}',  [ProfileController::class, 'channel']);
 Route::get('/most_followed',  [ProfileController::class, 'mostFollowed']);
-Route::get('/search', [ChannelController::class, 'search']);
+Route::post('/search', [ChannelController::class, 'search']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/follow/{id}', [ProfileController::class, 'follow']);
     Route::delete('/unfollow/{id}', [ProfileController::class, 'unfollow']);
     Route::get('/{id}/followers', [ProfileController::class, 'followers']);
     Route::get('/following', [ProfileController::class, 'following']);
     Route::get('/isfollowing/{id}', [ProfileController::class, 'isFollowing']);
+    Route::put('/usernameupdate', [RegisteredUserController::class, 'editUsername']);
+    Route::put('/emailupdate', [RegisteredUserController::class, 'editEmail']);
+    Route::put('/passwordupdate', [RegisteredUserController::class, 'editPassword']);
+    Route::delete('/userdelete', [RegisteredUserController::class, 'destroy']);
     Route::post('/messages', [MessageController::class, 'store']);
 });
 
