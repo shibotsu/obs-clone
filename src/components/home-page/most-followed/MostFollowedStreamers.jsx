@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Text } from "@fluentui/react";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@fluentui/react-components";
 import HomePageStreamerItem from "../../streamer/HomePageStreamerItem";
 import "./MostFollowedStreamers.css";
 
@@ -25,25 +25,29 @@ const MostFollowedStreamers = () => {
         Most followed streamers
       </Text>
       <div className="most-followed-streamers">
-        {data?.users?.map((user) => {
-          const isNone =
-            user.profile_picture === "none" ||
-            user.profile_picture.endsWith("/none");
+        {isLoading ? (
+          <Skeleton />
+        ) : (
+          data?.users?.map((user) => {
+            const isNone =
+              user.profile_picture === "none" ||
+              user.profile_picture.endsWith("/none");
 
-          const profilePicture = isNone
-            ? "profile_pic_placeholder.png"
-            : user.profile_picture;
+            const profilePicture = isNone
+              ? "profile_pic_placeholder.png"
+              : user.profile_picture;
 
-          return (
-            <div key={user.id}>
-              <HomePageStreamerItem
-                username={user.username}
-                profilePic={profilePicture}
-                onClick={() => navigate(`/streamer-profile/${user.id}`)}
-              />
-            </div>
-          );
-        })}
+            return (
+              <div key={user.id}>
+                <HomePageStreamerItem
+                  username={user.username}
+                  profilePic={profilePicture}
+                  onClick={() => navigate(`/streamer-profile/${user.id}`)}
+                />
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

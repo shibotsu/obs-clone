@@ -6,6 +6,7 @@ import DefaultLayout from "./layouts/DefaultLayout";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import StreamerProfilePage from "./pages/profile/StreamerProfilePage";
 import SearchResultsPage from "./pages/search-results/SearchResultsPage";
+import SettingsPage from "./pages/settings/SettingsPage";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
@@ -33,6 +34,7 @@ const App = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Routes>
           </Router>

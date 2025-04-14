@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { FollowButton } from "../../components/follow-button/FollowButton";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
@@ -52,7 +51,7 @@ const StreamerProfilePage = () => {
         <Text variant="xxLarge" className="profile-username">
           {username}
         </Text>
-        <Text variant="medium" className="follower-count">
+        <Text variant="medium" className="follower- count">
           Followers: {number_of_followers ?? 0}
         </Text>
         {console.log("Context: " + user.id + ", Received: " + id)}
