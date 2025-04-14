@@ -2,6 +2,7 @@ import HomePage from "./pages/home/HomePage";
 import LoginPage from "./pages/authentication/LoginPage";
 import RegisterPage from "./pages/authentication/RegisterPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import WatchPage from "./pages/watch/WatchPage";
 import DefaultLayout from "./layouts/DefaultLayout";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import StreamerProfilePage from "./pages/profile/StreamerProfilePage";
@@ -25,6 +26,7 @@ const App = () => {
                   path="/streamer-profile/:id"
                   element={<StreamerProfilePage />}
                 />
+                <Route path="/watch-test" element={<WatchPage />} />
               </Route>
 
               <Route element={<AuthLayout />}>
