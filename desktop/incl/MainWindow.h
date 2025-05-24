@@ -1,21 +1,29 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-
-#include <QMainWindow>
-#include <QLabel>
-#include <QPushButton>
-#include <QTimer>
-#include <QVBoxLayout>
-#include <QSettings>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <memory>
-
+<<<<<<< Updated upstream
+=======
 #include "ScreenCapture.h"
 #include "AudioCapture.h"
-#include "RecordingManager.h"
 #include "VolumeMeter.h"
+#include "RecordingManager.h"
+
+>>>>>>> Stashed changes
+#include <QMainWindow>
+#include <QPushButton.h>
+#include <QVBoxLayout>
+#include <QFileDialog.h>
+#include <QSettings.h>
+#include <QMessageBox>
+#include <QTimer>
+#include <QLabel>
+<<<<<<< Updated upstream
+#include "ScreenCapture.h"
+=======
+#include <QProgressBar>
+#include <QDateTime>
+
+>>>>>>> Stashed changes
 
 class MainWindow : public QMainWindow
 {
@@ -27,11 +35,14 @@ public:
 
 private slots:
     void updateScreenCapture();
+<<<<<<< Updated upstream
+=======
     void updateAudioVolume();
     void updateFPS();
     void toggleRecording();
     void onRecordingStateChanged(bool isRecording);
     void onRecordingError(const QString& errorMessage);
+>>>>>>> Stashed changes
 
 private:
     void setupUi();
@@ -50,7 +61,9 @@ private:
     QLabel* m_displayLabel;
     int m_displayWidth;
     int m_displayHeight;
+<<<<<<< Updated upstream
 };
+=======
 
     // Audio capture related
     AudioCapture m_audioCapture;
@@ -75,4 +88,6 @@ private:
     float m_smoothedVolume = -60.0f; // Initialize to minimum value
     QString m_currentBarColor = "#4CAF50"; // Start with green
 };
+
 #endif
+>>>>>>> Stashed changes
