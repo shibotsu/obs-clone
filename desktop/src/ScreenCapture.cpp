@@ -27,6 +27,8 @@ bool ScreenCapture::initialize()
         return false;
     }
 
+    QueryPerformanceFrequency(&m_qpcFreq); //initialize frequency
+
     return true;
 }
 
@@ -228,34 +230,6 @@ QImage ScreenCapture::getLatestFrame()
 {
     QMutexLocker locker(&m_frameMutex);
     return m_latestFrame;
-}
-
-void ScreenCapture::cleanup()
-{
-    if (m_deskDupl) {
-        if (m_acquiredDesktopImage) {
-            m_deskDupl->ReleaseFrame();
-            m_acquiredDesktopImage->Release();
-            m_acquiredDesktopImage = nullptr;
-        }
-        m_deskDupl->Release();
-        m_deskDupl = nullptr;
-    }
-
-    if (m_stagingTexture) {
-        m_stagingTexture->Release();
-        m_stagingTexture = nullptr;
-    }
-
-    if (m_d3dContext) {
-        m_d3dContext->Release();
-        m_d3dContext = nullptr;
-    }
-
-    if (m_d3dDevice) {
-        m_d3dDevice->Release();
-        m_d3dDevice = nullptr;
-    }
 }
 
 HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* frameInfo, int offsetX, int offsetY)
@@ -467,5 +441,161 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
     default:
         qDebug() << "Unknown cursor type:" << shapeInfo.Type;
         break;
+    }
+}
+
+bool ScreenCapture::captureFrameAndRecord(FFmpegRecorder* recorder) {
+    if (!m_deskDupl) {
+        qDebug() << "No desktop duplicator available";
+        return false;
+    }
+
+    // Get next frame
+    IDXGIResource* desktopResource = nullptr;
+    DXGI_OUTDUPL_FRAME_INFO frameInfo;
+
+    // Try to acquire the next frame with a reasonable timeout
+    HRESULT hr = m_deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
+
+    if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
+        // No new frame available - this is normal
+        return false;
+    }
+
+    if (FAILED(hr)) {
+        if (hr == DXGI_ERROR_ACCESS_LOST) {
+            qDebug() << "Access lost to desktop duplication";
+            // Release any previous frame
+            if (m_acquiredDesktopImage) {
+                m_acquiredDesktopImage->Release();
+                m_acquiredDesktopImage = nullptr;
+            }
+            // Try to reinitialize
+            if (m_deskDupl) {
+                m_deskDupl->Release();
+                m_deskDupl = nullptr;
+            }
+            initDuplication();
+        }
+        else {
+            qDebug() << "Failed to acquire frame. HRESULT:" << hr;
+        }
+        return false;
+    }
+
+    // Release any previous frame
+    if (m_acquiredDesktopImage) {
+        m_acquiredDesktopImage->Release();
+        m_acquiredDesktopImage = nullptr;
+    }
+
+    // Get mouse info
+    int offsetX = m_outputDesc.DesktopCoordinates.left;
+    int offsetY = m_outputDesc.DesktopCoordinates.top;
+    getMouse(&m_ptrInfo, &frameInfo, offsetX, offsetY);
+
+    // QI for ID3D11Texture2D
+    hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&m_acquiredDesktopImage);
+    desktopResource->Release();
+
+    if (FAILED(hr)) {
+        qDebug() << "Failed to QI for ID3D11Texture2D";
+        m_deskDupl->ReleaseFrame();
+        return false;
+    }
+
+    // Copy to staging texture
+    m_d3dContext->CopyResource(m_stagingTexture, m_acquiredDesktopImage);
+
+    // Map staging texture to read pixels
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    hr = m_d3dContext->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
+
+    if (SUCCEEDED(hr)) {
+        // Get current timestamp
+        LARGE_INTEGER qpcNow;
+        QueryPerformanceCounter(&qpcNow);
+        int64_t timestamp = (qpcNow.QuadPart * 1000) / m_qpcFreq.QuadPart;
+
+        // Copy from staging texture to a buffer for FFmpeg
+        unsigned char* frameBuffer = new unsigned char[m_screenWidth * m_screenHeight * 4];
+        uchar* dest = frameBuffer;
+        uchar* src = (uchar*)mappedResource.pData;
+
+        for (int y = 0; y < m_screenHeight; y++) {
+            memcpy(dest, src, m_screenWidth * 4);
+            dest += m_screenWidth * 4;
+            src += mappedResource.RowPitch;
+        }
+
+        m_d3dContext->Unmap(m_stagingTexture, 0);
+
+        // Also update our QImage for display purposes if needed
+        {
+            QMutexLocker locker(&m_frameMutex);
+            uchar* qImageDest = m_latestFrame.bits();
+            src = frameBuffer;
+            const int bytesPerLine = m_screenWidth * 4;
+
+            for (int y = 0; y < m_screenHeight; y++) {
+                memcpy(qImageDest, src, bytesPerLine);
+                qImageDest += m_latestFrame.bytesPerLine();
+                src += bytesPerLine;
+            }
+
+            // Draw mouse cursor on top of the frame
+            drawMouse(m_latestFrame, &m_ptrInfo);
+        }
+
+        // Send the frame to FFmpeg recorder
+        if (!recorder->sendVideoFrame(frameBuffer, timestamp)) {
+            qDebug() << "Failed to capture video frame";
+        }
+
+        // Clean up
+        delete[] frameBuffer;
+    }
+    else {
+        qDebug() << "Failed to map staging texture:" << hr;
+    }
+
+    // Release frame
+    m_deskDupl->ReleaseFrame();
+    return true;
+}
+
+int ScreenCapture::getWidth() {
+    return m_screenWidth;
+}
+
+int ScreenCapture::getHeight() {
+    return m_screenHeight;
+}
+
+void ScreenCapture::cleanup()
+{
+    if (m_deskDupl) {
+        if (m_acquiredDesktopImage) {
+            m_deskDupl->ReleaseFrame();
+            m_acquiredDesktopImage->Release();
+            m_acquiredDesktopImage = nullptr;
+        }
+        m_deskDupl->Release();
+        m_deskDupl = nullptr;
+    }
+
+    if (m_stagingTexture) {
+        m_stagingTexture->Release();
+        m_stagingTexture = nullptr;
+    }
+
+    if (m_d3dContext) {
+        m_d3dContext->Release();
+        m_d3dContext = nullptr;
+    }
+
+    if (m_d3dDevice) {
+        m_d3dDevice->Release();
+        m_d3dDevice = nullptr;
     }
 }

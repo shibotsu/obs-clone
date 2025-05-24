@@ -18,11 +18,14 @@ if (NOT Qt6_FOUND)
     find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 endif()
 
+include_directories("C:/ffmpeg-dev/include")
+link_directories("C:/ffmpeg-dev/lib")
+
 # Add source files
-add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h)
+add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h "src/AudioCapture.cpp" "incl/AudioCapture.h" "incl/VolumeMeter.h" "src/VolumeMeter.cpp"  "incl/RecordingManager.h" "incl/FFmpegRecorder.h" "incl/FFmpegStreamer.h" "src/RecordingManager.cpp" "incl/FFmpegRecorder.h" "src/FFmpegRecorder.cpp")
 
 # Link libraries
-target_link_libraries(obs Qt::Core Qt::Gui Qt::Widgets d3d11 dxgi)
+target_link_libraries(obs Qt::Core Qt::Gui Qt::Widgets d3d11 dxgi avcodec avformat avutil swscale swresample)
 
 if(WIN32)
   set(DEBUG_SUFFIX)
@@ -55,4 +58,12 @@ endif()
 
 if(WIN32)
   set(THREADS_PREFER_PTHREAD_FLAG OFF)
+endif()
+
+if(MSVC)
+    foreach(flag_var
+        CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG)
+        string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+    endforeach()
 endif()

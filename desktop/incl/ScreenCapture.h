@@ -7,6 +7,8 @@
 #include <QCursor>
 #include "PTR_INFO.h"
 
+#include "FFmpegRecorder.h"
+
 class ScreenCapture
 {
 public:
@@ -16,6 +18,14 @@ public:
     bool initialize();
     bool captureFrame();
     QImage getLatestFrame();
+
+    int getWidth();
+    int getHeight();
+
+    bool captureFrameAndRecord(FFmpegRecorder* recorder);
+
+    // Output description 
+    DXGI_OUTPUT_DESC m_outputDesc;
 
 private:
     bool initDirectX();
@@ -39,13 +49,14 @@ private:
     int m_screenWidth = 0;
     int m_screenHeight = 0;
 
-    // Output description 
-    DXGI_OUTPUT_DESC m_outputDesc;
+
 
     // Pointer info
     PTR_INFO m_ptrInfo;
 
     // Output number
     UINT m_outputNumber = 0;
+
+    LARGE_INTEGER m_qpcFreq;
 
 };
