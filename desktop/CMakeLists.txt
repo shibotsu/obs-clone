@@ -22,7 +22,7 @@ include_directories("C:/ffmpeg-dev/include")
 link_directories("C:/ffmpeg-dev/lib")
 
 # Add source files
-add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h "src/AudioCapture.cpp" "incl/AudioCapture.h" "incl/VolumeMeter.h" "src/VolumeMeter.cpp"  "incl/RecordingManager.h" "incl/FFmpegRecorder.h" "incl/FFmpegStreamer.h" "src/RecordingManager.cpp" "incl/FFmpegRecorder.h" "src/FFmpegRecorder.cpp")
+add_executable(obs "src/obsproject.cpp" src/ScreenCapture.cpp src/MainWindow.cpp incl/ScreenCapture.h incl/MainWindow.h  incl/PTR_INFO.h "src/AudioCapture.cpp" "incl/AudioCapture.h" "incl/VolumeMeter.h" "src/VolumeMeter.cpp" "incl/RecordingManager.h" "incl/FFmpegRecorder.h" "incl/FFmpegStreamer.h" "src/RecordingManager.cpp" "incl/FFmpegRecorder.h" "src/FFmpegRecorder.cpp" )
 
 # Link libraries
 target_link_libraries(obs Qt::Core Qt::Gui Qt::Widgets d3d11 dxgi avcodec avformat avutil swscale swresample)

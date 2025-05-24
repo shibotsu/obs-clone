@@ -1,14 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-<<<<<<< Updated upstream
-=======
 #include "ScreenCapture.h"
 #include "AudioCapture.h"
 #include "VolumeMeter.h"
 #include "RecordingManager.h"
 
->>>>>>> Stashed changes
 #include <QMainWindow>
 #include <QPushButton.h>
 #include <QVBoxLayout>
@@ -17,13 +14,10 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QLabel>
-<<<<<<< Updated upstream
-#include "ScreenCapture.h"
-=======
+
 #include <QProgressBar>
 #include <QDateTime>
 
->>>>>>> Stashed changes
 
 class MainWindow : public QMainWindow
 {
@@ -35,14 +29,11 @@ public:
 
 private slots:
     void updateScreenCapture();
-<<<<<<< Updated upstream
-=======
     void updateAudioVolume();
     void updateFPS();
     void toggleRecording();
     void onRecordingStateChanged(bool isRecording);
     void onRecordingError(const QString& errorMessage);
->>>>>>> Stashed changes
 
 private:
     void setupUi();
@@ -61,9 +52,6 @@ private:
     QLabel* m_displayLabel;
     int m_displayWidth;
     int m_displayHeight;
-<<<<<<< Updated upstream
-};
-=======
 
     // Audio capture related
     AudioCapture m_audioCapture;
@@ -90,4 +78,3 @@ private:
 };
 
 #endif
->>>>>>> Stashed changes

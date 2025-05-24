@@ -1,37 +1,21 @@
 #include "incl/MainWindow.h"
-<<<<<<< Updated upstream
-#include <QVBoxLayout>
-#include <QDebug>
-=======
 #include <QHBoxLayout>
 #include <QDebug>
 #include <QScreen>
 #include <QStandardPaths>
 #include <QDateTime>
->>>>>>> Stashed changes
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     setupUi();
-<<<<<<< Updated upstream
-    
-    // Initialize screen capture
-=======
     loadSettings();
 
     // Initialize screen capture first
->>>>>>> Stashed changes
     if (!m_screenCapture.initialize()) {
         qDebug() << "Failed to initialize screen capture";
         return;
     }
-<<<<<<< Updated upstream
-    
-    // Set up timer to update the display
-    connect(&m_captureTimer, &QTimer::timeout, this, &MainWindow::updateScreenCapture);
-    m_captureTimer.start(33); // ~30 FPS
-=======
 
     // Initialize audio capture
     if (!m_audioCapture.initializeInput() ||
@@ -79,14 +63,11 @@ MainWindow::MainWindow(QWidget* parent)
     // Setup connections for recording state changes
     connect(m_recordingManager.get(), &RecordingManager::recordingStateChanged, this, &MainWindow::onRecordingStateChanged);
     connect(m_recordingManager.get(), &RecordingManager::recordingError, this, &MainWindow::onRecordingError);
->>>>>>> Stashed changes
 }
 
 MainWindow::~MainWindow()
 {
     m_captureTimer.stop();
-<<<<<<< Updated upstream
-=======
     m_volumeTimer.stop();
     m_audioCapture.stopCapture();
 
@@ -96,7 +77,6 @@ MainWindow::~MainWindow()
     }
 
     saveSettings();
->>>>>>> Stashed changes
 }
 
 void MainWindow::setupUi()
@@ -112,11 +92,6 @@ void MainWindow::setupUi()
     m_displayLabel = new QLabel(this);
     m_displayLabel->setMinimumSize(640, 480);
     m_displayLabel->setAlignment(Qt::AlignCenter);
-<<<<<<< Updated upstream
-    m_displayLabel->setScaledContents(false); // We'll handle scaling manually
-    
-    layout->addWidget(m_displayLabel);
-=======
     m_displayLabel->setScaledContents(false);
 
     // Add FPS and latency indicators
@@ -137,7 +112,6 @@ void MainWindow::setupUi()
     mainLayout->addWidget(m_recordButton);
     mainLayout->addLayout(statsLayout);
 
->>>>>>> Stashed changes
     setCentralWidget(centralWidget);
 
     // Store display dimensions
@@ -181,17 +155,30 @@ void MainWindow::updateScreenCapture()
 
     if (m_screenCapture.captureFrame()) {
         QImage frame = m_screenCapture.getLatestFrame();
-        
-        // Scale the frame to fit the display area while maintaining aspect ratio
-        QImage scaledFrame = frame.scaled(m_displayLabel->size(), 
-                                         Qt::KeepAspectRatio, 
-                                         Qt::SmoothTransformation);
-        
-        // Display the scaled frame
-        m_displayLabel->setPixmap(QPixmap::fromImage(scaledFrame));
+
+        // Only scale if necessary (avoid unnecessary operations)
+        QSize targetSize = m_displayLabel->size();
+        if (frame.size() != targetSize) {
+            // Use fast transformation for real-time display
+            QImage scaledFrame = frame.scaled(
+                targetSize,
+                Qt::KeepAspectRatio,
+                Qt::FastTransformation
+            );
+            m_displayLabel->setPixmap(QPixmap::fromImage(scaledFrame));
+        }
+        else {
+            m_displayLabel->setPixmap(QPixmap::fromImage(frame));
+        }
+
+        // Track frame timing for FPS calculation
+        m_frameCount++;
+        qint64 now = QDateTime::currentMSecsSinceEpoch();
+        qint64 frameDuration = now - startTime;
+
+        // Update latency display (for screen capture operation)
+        m_latencyLabel->setText(QString("Update Latency: %1 ms").arg(frameDuration));
     }
-<<<<<<< Updated upstream
-=======
 }
 
 void MainWindow::updateAudioVolume()
@@ -292,5 +279,4 @@ void MainWindow::loadSettings()
 {
     QSettings settings("YourCompany", "ScreenRecorder");
     m_lastSavePath = settings.value("lastSavePath").toString();
->>>>>>> Stashed changes
 }
