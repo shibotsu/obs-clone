@@ -50,6 +50,6 @@ jobs:
         working-directory: ./backend
         run: php artisan jwt:secret --force
 
-      - name: Run tests in parallel
+      - name: Run tests
         working-directory: ./backend
-        run: php artisan test --parallel
+        run: php artisan test
