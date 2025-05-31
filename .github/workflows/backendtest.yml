@@ -21,7 +21,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, bcmath, pdo, sqlite, fileinfo, sodium
+          extensions: mbstring, bcmath, pdo, pdo_sqlite, sqlite, fileinfo, sodium
           coverage: none
 
       - name: Copy .env
