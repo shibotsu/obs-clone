@@ -21,7 +21,7 @@ Broadcast::channel('chat.{receiverId}', function ($user, $receiverId) {
 
 Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/login', [SessionController::class, 'store']);
-Route::post('/logout', [SessionController::class, 'destroy']);
+
 Route::middleware('auth:api')->get('/profile', [ProfileController::class, 'show']);
 Route::middleware('auth:api')->post('/picture', [ProfileController::class, 'changePicture']);
 Route::get('/profile/{id}',  [ProfileController::class, 'channel']);
@@ -38,6 +38,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/passwordupdate', [RegisteredUserController::class, 'editPassword']);
     Route::delete('/userdelete', [RegisteredUserController::class, 'destroy']);
     Route::post('/messages', [MessageController::class, 'store']);
+    Route::post('/logout', [SessionController::class, 'destroy']);
 });
 
 

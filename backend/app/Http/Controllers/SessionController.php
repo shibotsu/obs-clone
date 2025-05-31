@@ -42,7 +42,7 @@ class SessionController extends Controller
 
             return response()->json(['message' => 'Successfully logged out'], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to log out'], 500);
+            return response()->json(['error' => 'Failed to log out'], 401);
         }
     }
 }
