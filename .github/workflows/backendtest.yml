@@ -4,7 +4,7 @@ on:
   push:
     branches: [ backend ]
   pull_request:
-    branches: [ backend]
+    branches: [ backend ]
 
 jobs:
   laravel-tests:
@@ -12,6 +12,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Change to backend directory
+        working-directory: ./backend
+        run: echo "Switched to backend directory"
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -21,24 +25,31 @@ jobs:
           coverage: none
 
       - name: Copy .env
+        working-directory: ./backend
         run: copy .env.example .env
 
       - name: Configure SQLite in-memory
+        working-directory: ./backend
         run: |
           echo DB_CONNECTION=sqlite>>.env
           echo DB_DATABASE=:memory:>>.env
 
       - name: Clear config cache
+        working-directory: ./backend
         run: php artisan config:clear
 
       - name: Install dependencies
+        working-directory: ./backend
         run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Generate application key
+        working-directory: ./backend
         run: php artisan key:generate
 
       - name: Generate JWT secret
+        working-directory: ./backend
         run: php artisan jwt:secret --force
 
       - name: Run tests in parallel
+        working-directory: ./backend
         run: php artisan test --parallel
