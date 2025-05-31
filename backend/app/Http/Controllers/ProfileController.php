@@ -49,7 +49,7 @@ class ProfileController extends Controller
     public function channel($id) {
         $channel = User::find($id);
         if(!$channel) {
-            return response()->json(['error' => 'Channel does not exist'], 401);
+            return response()->json(['error' => 'Channel does not exist'], 404);
         }
         $channelData = $channel->only(['username', 'number_of_followers', 'profile_picture']);
         $channelData['profile_picture'] = $channel->profile_picture
@@ -61,15 +61,15 @@ class ProfileController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['error' => 'User not found.'], 404);
         }
 
         if (auth()->id() === $user->id) {
-            return response()->json(['message' => 'You cannot follow yourself.'], 400);
+            return response()->json(['error' => 'You cannot follow yourself.'], 400);
         }
 
         if (auth()->user()->following()->where('following_id', $user->id)->exists()) {
-            return response()->json(['message' => 'You are already following this user.'], 400);
+            return response()->json(['error' => 'You are already following this user.'], 409);
         }
 
         auth()->user()->following()->attach($user->id);
@@ -84,15 +84,22 @@ class ProfileController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['error' => 'User not found.'], 404);
         }
 
         if (auth()->id() === $user->id) {
-            return response()->json(['message' => 'You cannot unfollow yourself.'], 400);
+            return response()->json(['error' => 'You cannot unfollow yourself.'], 400);
+        }
+
+        $wasFollowing = auth()->user()->following()->where('following_id', $user->id)->exists();
+        if (!$wasFollowing) {
+            return response()->json(['error' => 'You are not following this user.'], 404);
         }
         auth()->user()->following()->detach($user->id);
-        $user->number_of_followers--;
-        $user->save();
+        if ($user->number_of_followers > 0) {
+            $user->number_of_followers--;
+            $user->save();
+        }
         return response()->json(['message' => 'Unfollowed successfully']);
     }
 
@@ -100,7 +107,7 @@ class ProfileController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['error' => 'User not found.'], 404);
         }
         $followers = $user->followers;
         return response()->json(['followers' => $followers]);
@@ -131,7 +138,7 @@ class ProfileController extends Controller
         $userToCheck = User::find($id);
 
         if (!$userToCheck) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['error' => 'User not found.'], 404);
         }
 
         $isFollowing = auth()->user()

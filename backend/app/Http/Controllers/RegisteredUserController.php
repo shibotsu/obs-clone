@@ -71,8 +71,12 @@ class RegisteredUserController extends Controller
         return response()->json(['user' => $user, 'message' => 'Password successfully updated'], 200);
     }
 
+
     public function destroy() {
         $user = Auth::user();
+        if (!$user || !User::find($user->id)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
         JWTAuth::invalidate(JWTAuth::getToken());
         $user->delete();
         return response()->json(['message' => 'User successfully deleted'], 200);
