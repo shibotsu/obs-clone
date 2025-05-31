@@ -34,13 +34,13 @@ jobs:
           echo DB_CONNECTION=sqlite>>.env
           echo DB_DATABASE=:memory:>>.env
 
+       -name: Install dependencies
+        working-directory: ./backend
+        run: composer install --prefer-dist --no-progress --no-suggest
+        
       - name: Clear config cache
         working-directory: ./backend
         run: php artisan config:clear
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: composer install --prefer-dist --no-progress --no-suggest
 
       - name: Generate application key
         working-directory: ./backend
