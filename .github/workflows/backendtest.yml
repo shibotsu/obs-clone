@@ -34,10 +34,10 @@ jobs:
           echo DB_CONNECTION=sqlite>>.env
           echo DB_DATABASE=:memory:>>.env
 
-       -name: Install dependencies
+      - name: Install dependencies
         working-directory: ./backend
         run: composer install --prefer-dist --no-progress --no-suggest
-        
+
       - name: Clear config cache
         working-directory: ./backend
         run: php artisan config:clear
