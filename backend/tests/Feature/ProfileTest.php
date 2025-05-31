@@ -28,6 +28,7 @@ class ProfileTest extends TestCase
     public function test_unauthenticated_user_cannot_view_own_profile()
     {
         $response = $this->getJson('/api/profile');
+
         $response->assertStatus(401);
     }
 
