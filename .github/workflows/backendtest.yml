@@ -1,0 +1,44 @@
+name: Laravel SQLite In-Memory Tests on Windows
+
+on:
+  push:
+    branches: [ backend ]
+  pull_request:
+    branches: [ backend]
+
+jobs:
+  laravel-tests:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, bcmath, pdo, sqlite
+          coverage: none
+
+      - name: Copy .env
+        run: copy .env.example .env
+
+      - name: Configure SQLite in-memory
+        run: |
+          echo DB_CONNECTION=sqlite>>.env
+          echo DB_DATABASE=:memory:>>.env
+
+      - name: Clear config cache
+        run: php artisan config:clear
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Generate JWT secret
+        run: php artisan jwt:secret --force
+
+      - name: Run tests in parallel
+        run: php artisan test --parallel
