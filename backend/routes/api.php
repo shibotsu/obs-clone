@@ -37,6 +37,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/emailupdate', [RegisteredUserController::class, 'editEmail']);
     Route::put('/passwordupdate', [RegisteredUserController::class, 'editPassword']);
     Route::delete('/userdelete', [RegisteredUserController::class, 'destroy']);
+    Route::get('/channel/{userId}', [ChannelController::class, 'show']);
+    Route::put('/channel', [ChannelController::class, 'update']);
     Route::post('/messages', [MessageController::class, 'store']);
     Route::post('/logout', [SessionController::class, 'destroy']);
 });

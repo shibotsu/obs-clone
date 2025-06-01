@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Channel;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -12,13 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('channels', function (Blueprint $table) {
+        Schema::create('streams', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
-            $table->string('stream_key')->unique()->nullable();
-            $table->string('title')->nullable();
-            $table->text('description')->nullable();
-            $table->boolean('is_live')->default(false);
+            $table->foreignIdFor(Channel::class)->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->timestamp('start_time')->nullable();
+            $table->timestamp('end_time')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('channels');
+        Schema::dropIfExists('streams');
     }
 };
