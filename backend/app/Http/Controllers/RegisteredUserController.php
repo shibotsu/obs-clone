@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Channel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 
@@ -22,6 +24,14 @@ class RegisteredUserController extends Controller
 
         $user = User::create($validatedAttributes);
         $token = JWTAuth::fromUser($user);
+        $channel = Channel::create([
+            'user_id' => $user->id,
+            'title' => $user->username . "'s Channel",
+            'description' => 'Welcome to my channel!',
+            'stream_key' => ''
+        ]);
+        $channel->stream_key = Str::random(32);
+        $channel->save();
         return response()->json(['token' => $token], 201);
     }
 
