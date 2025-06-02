@@ -7,6 +7,7 @@ use App\Models\Stream;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ChannelController extends Controller
 {
@@ -46,6 +47,9 @@ class ChannelController extends Controller
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_live' => 'nullable|boolean',
+            'stream_title' => 'nullable|string|max:255',
+            'stream_description' => 'nullable|string',
+            'stream_category' => 'nullable|string|max:255',
         ]);
 
         $channel->update($data);
@@ -104,5 +108,48 @@ class ChannelController extends Controller
         $channel->save();
 
         return response()->json(['message' => 'Stream ended']);
+    }
+    public function regenerateKey($id)
+    {
+        $channel = Channel::where('id', $id)->firstOrFail();
+        if (!$channel) {
+            return response()->json(["error" => "Channel not found."], 404);
+        }
+        $user = Auth::user();
+        if( $user->id != $channel->user_id) {
+            return response()->json(["error" => "Unauthorized user."], 403);
+        }
+
+        // Generate a new unique key
+        do {
+            $newKey = Str::random(32);
+        } while (Channel::where('stream_key', $newKey)->exists());
+
+        $channel->stream_key = $newKey;
+        $channel->save();
+
+        return response()->json(['channel' => $channel]);
+    }
+    public function settings($id)
+    {
+        $channel = Channel::where('id', $id)->firstOrFail();
+        if (!$channel) {
+            return response()->json(["error" => "Channel not found."], 404);
+        }
+        $user = Auth::user();
+        if( $user->id != $channel->user_id) {
+            return response()->json(["error" => "Unauthorized user."], 403);
+        }
+        $host = request()->getHost();
+        return response()->json(["channel" => $channel, "host" => $host]);
+    }
+    public function stream($id)
+    {
+        $channel = Channel::where('id', $id)->firstOrFail();
+        if (!$channel) {
+            return response()->json(["error" => "Channel not found."], 404);
+        }
+        $host = request()->getHost();
+        return response()->json(["channel" => $channel, "host" => $host]);
     }
 }

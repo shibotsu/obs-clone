@@ -110,6 +110,11 @@ class ProfileController extends Controller
             return response()->json(['error' => 'User not found.'], 404);
         }
         $followers = $user->followers;
+        foreach ($followers as $follower) {
+            $follower->profile_picture = $follower->profile_picture
+                ? asset('storage/' . $follower->profile_picture)
+                : null;
+        }
         return response()->json(['followers' => $followers]);
     }
 

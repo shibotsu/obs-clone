@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_live')->default(false);
+            $table->string('stream_title')->nullable();
+            $table->text('stream_description')->nullable();
+            $table->string('stream_category')->nullable();
             $table->timestamps();
         });
     }
