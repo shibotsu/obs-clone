@@ -1,0 +1,13 @@
+.gradient-send-button {
+    background: linear-gradient(to right, #f7254d, #763a94);
+    color: white;
+    transition: background 0.2s ease;
+    border: none;
+    height: 32px;
+    width: 32px;
+}
+
+.gradient-send-button:hover {
+    background: linear-gradient(to right, #c51e40, #5e2d75);
+    color: white;
+}
