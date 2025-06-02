@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  nginx-rtmp:
+    image: tiangolo/nginx-rtmp
+    ports:
+      - "1935:1935"    # RTMP ingest from OBS
+      - "8080:80"      # HLS served to web
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - hls_data:/tmp/hls
+
+volumes:
+  hls_data:
