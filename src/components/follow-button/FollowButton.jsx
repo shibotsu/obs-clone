@@ -71,16 +71,16 @@ export const FollowButton = ({ id }) => {
 
   return (
     <div>
-      {console.log(data)}
-      {console.log(token)}
-      <Button
-        disabled={isMutating || isLoading || pending}
-        onClick={handleClick}
-        icon={buttonIcon}
-        appearance={isFollowing ? "default" : "primary"}
-      >
-        {isFollowing ? "Unfollow" : "Follow"}
-      </Button>
+      {token && (
+        <Button
+          disabled={isMutating || isLoading || pending}
+          onClick={handleClick}
+          icon={buttonIcon}
+          appearance={isFollowing ? "default" : "primary"}
+        >
+          {isFollowing ? "Unfollow" : "Follow"}
+        </Button>
+      )}
     </div>
   );
 };
