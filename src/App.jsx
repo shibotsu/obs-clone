@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import WatchPage from "./pages/watch-page/WatchPage";
+import GoLivePage from "./pages/go-live/GoLivePage";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/watch/:id" element={<WatchPage />} />
+                <Route path="/go-live" element={<GoLivePage />} />
               </Route>
             </Routes>
           </Router>

@@ -17,7 +17,7 @@ import { FollowButton } from "../follow-button/FollowButton";
 import ShareButton from "../../components/share-button/ShareButton";
 import { useParams } from "react-router-dom";
 
-export default function StreamHeader({ channel }) {
+export default function StreamHeader({ user, channel }) {
   const { id } = useParams();
   return (
     <div
@@ -41,9 +41,9 @@ export default function StreamHeader({ channel }) {
       >
         <div style={{ display: "flex", alignItems: "center" }}>
           <img
-            style={{ maxHeight: "100px", maxWidth: "100px" }}
-            src={channel.avatar}
+            src={user.profile_picture ?? "/default-avatar.png"}
             alt=""
+            style={{ maxHeight: "100px", maxWidth: "100px" }}
             draggable={false}
           />
           <div
@@ -55,10 +55,14 @@ export default function StreamHeader({ channel }) {
               gap: "8px",
             }}
           >
-            <h2 style={{ margin: 0 }}>{channel.name}</h2>
+            <h2 style={{ margin: 0 }}>{user.username}</h2>
             {/* Extract Stream title from the channel prop in the future */}
-            <h3 style={{ margin: 0 }}>Stream title</h3>
-            <p style={{ margin: 0 }}>Game / content that is streamed</p>
+            <h3 style={{ margin: 0 }}>
+              {channel.stream_title || "Untitled stream"}
+            </h3>
+            <p style={{ margin: 0 }}>
+              {channel.stream_category || "Uncategorized"}
+            </p>
           </div>
         </div>
         <div style={{ diplay: "flex", flexDirection: "column" }}>

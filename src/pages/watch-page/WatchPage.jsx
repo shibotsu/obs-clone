@@ -22,7 +22,7 @@ export default function WatchPage() {
   } = useQuery({
     queryKey: ["channel", id],
     queryFn: () =>
-      fetch(`http://127.0.0.1:8000/api/profile/${id}`).then((res) => {
+      fetch(`http://127.0.0.1:8000/api/channel/${id}/stream`).then((res) => {
         if (!res.ok) {
           throw new Error("Streamer not found");
         }
@@ -40,7 +40,7 @@ export default function WatchPage() {
         fluid: true,
         sources: [
           {
-            src: "http://192.168.1.96:8080/hls/mykey.m3u8",
+            src: `http://192.168.1.96:8080/hls/${id}.m3u8`,
             type: "application/x-mpegURL",
           },
         ],
@@ -97,8 +97,8 @@ export default function WatchPage() {
           {isError && <p>Streamer not found.</p>}
           {channel && (
             <>
-              <StreamHeader channel={channel} />
-              <StreamDescription channel={channel} />
+              <StreamHeader user={channel.user} channel={channel.channel} />
+              <StreamDescription channel={channel.channel} />
             </>
           )}
         </section>

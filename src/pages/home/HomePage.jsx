@@ -4,6 +4,7 @@ import { Button, makeStyles } from "@fluentui/react-components";
 import { HomeSideBar } from "../../components/sidebar/HomeSidebar";
 import HomeLiveStreams from "../../components/home-page/livestreams/HomeLiveStreams";
 import MostFollowedStreamers from "../../components/home-page/most-followed/MostFollowedStreamers";
+import { useNavigate } from "react-router-dom";
 
 /* const useStyles = makeStyles({
   livestreamsGrid: {
@@ -23,6 +24,7 @@ import MostFollowedStreamers from "../../components/home-page/most-followed/Most
 }); */
 
 const HomePage = () => {
+  const navigate = useNavigate();
   return (
     <div className="home-container">
       <div className="livestreams-header">
@@ -36,6 +38,7 @@ const HomePage = () => {
           shape="rounded"
           appearance="primary"
           className="start-streaming-button"
+          onClick={() => navigate("/go-live")}
         >
           Start streaming
         </Button>
