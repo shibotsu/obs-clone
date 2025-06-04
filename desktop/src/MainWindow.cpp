@@ -24,12 +24,9 @@ MainWindow::MainWindow(QWidget* parent)
         return;
     }
 
-    // Create recording manager with reference to our screen capture
-    m_recordingManager = std::make_unique<RecordingManager>(&m_screenCapture, &m_audioCapture);
-
-
-    // Start audio capture
+    m_recordingManager = std::make_unique<RecordingManager>();
     m_audioCapture.startCapture();
+
 
     // Get the refresh rate of the primary screen
     QScreen* primaryScreen = QGuiApplication::primaryScreen();
@@ -47,15 +44,15 @@ MainWindow::MainWindow(QWidget* parent)
     // Calculate timer interval in milliseconds (1000 ms / refresh rate)
     int captureInterval = 1000 / refreshRate;
 
-    // Set up timers with refresh rate matching
-    connect(&m_captureTimer, &QTimer::timeout, this, &MainWindow::updateScreenCapture);
+    // Connect the ScreenCapture's signal to MainWindow's slot for preview
+    // Now m_captureTimer will trigger acquireAndProcessFrame, which in turn emits newFrameReady
+    // This newFrameReady signal is connected to onNewVideoFrameReady for UI update.
+    connect(&m_captureTimer, &QTimer::timeout, &m_screenCapture, &ScreenCapture::captureFrame);
+    connect(&m_screenCapture, &ScreenCapture::newFrameReady, this, &MainWindow::onNewVideoFrameReady);
     m_captureTimer.start(captureInterval);
 
-
-    // Make audio updates more frequent than screen updates for responsiveness
-    // Using a much shorter interval for audio capturing
     connect(&m_volumeTimer, &QTimer::timeout, this, &MainWindow::updateAudioVolume);
-    m_volumeTimer.start(10); // 10ms intervals = ~100 updates per second
+    m_volumeTimer.start(10);
 
     // Enable Qt's high DPI scaling
     setWindowFlag(Qt::Window);
@@ -107,9 +104,15 @@ void MainWindow::setupUi()
     m_recordButton->setCheckable(false);
     connect(m_recordButton, &QPushButton::clicked, this, &MainWindow::toggleRecording);
 
+    // Streaming button
+    m_streamButton = new QPushButton("Start Streaming", this); // Initialize the new button
+    m_streamButton->setCheckable(false);
+    connect(m_streamButton, &QPushButton::clicked, this, &MainWindow::toggleStreaming); // Connect to the new slot
+
     // Add widgets to layout
     mainLayout->addWidget(m_displayLabel);
     mainLayout->addWidget(m_recordButton);
+    mainLayout->addWidget(m_streamButton);
     mainLayout->addLayout(statsLayout);
 
     setCentralWidget(centralWidget);
@@ -148,37 +151,35 @@ void MainWindow::setupUi()
     mainLayout->addLayout(volumeMeterLayout);
 }
 
-void MainWindow::updateScreenCapture()
+void MainWindow::onNewVideoFrameReady(const uchar* data, int width, int height, int bytesPerLine, const PTR_INFO& mousePtrInfo)
 {
-    // Time the capture operation
+    // This replaces the old updateScreenCapture() content that fetched m_latestFrame
+    // Now we get the raw data directly from the signal.
+
     qint64 startTime = QDateTime::currentMSecsSinceEpoch();
 
-    if (m_screenCapture.captureFrame()) {
-        QImage frame = m_screenCapture.getLatestFrame();
+    // Create a QImage from the received raw data.
+    // This QImage does NOT take ownership of 'data'.
+    QImage frame(data, width, height, bytesPerLine, QImage::Format_ARGB32);
 
-        // Only scale if necessary (avoid unnecessary operations)
-        QSize targetSize = m_displayLabel->size();
-        if (frame.size() != targetSize) {
-            // Use fast transformation for real-time display
-            QImage scaledFrame = frame.scaled(
-                targetSize,
-                Qt::KeepAspectRatio,
-                Qt::FastTransformation
-            );
-            m_displayLabel->setPixmap(QPixmap::fromImage(scaledFrame));
-        }
-        else {
-            m_displayLabel->setPixmap(QPixmap::fromImage(frame));
-        }
-
-        // Track frame timing for FPS calculation
-        m_frameCount++;
-        qint64 now = QDateTime::currentMSecsSinceEpoch();
-        qint64 frameDuration = now - startTime;
-
-        // Update latency display (for screen capture operation)
-        m_latencyLabel->setText(QString("Update Latency: %1 ms").arg(frameDuration));
+    // Only scale if necessary (avoid unnecessary operations)
+    QSize targetSize = m_displayLabel->size();
+    if (frame.size() != targetSize) {
+        QImage scaledFrame = frame.scaled(
+            targetSize,
+            Qt::KeepAspectRatio,
+            Qt::FastTransformation
+        );
+        m_displayLabel->setPixmap(QPixmap::fromImage(scaledFrame));
     }
+    else {
+        m_displayLabel->setPixmap(QPixmap::fromImage(frame));
+    }
+
+    m_frameCount++;
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 frameDuration = now - startTime;
+    m_latencyLabel->setText(QString("Update Latency: %1 ms").arg(frameDuration));
 }
 
 void MainWindow::updateAudioVolume()
@@ -237,15 +238,76 @@ void MainWindow::toggleRecording()
 
         m_lastSavePath = QFileInfo(filePath).path();
 
-        // Start recording
-        if (!m_recordingManager->startRecording(filePath.toStdString())) {
-            QMessageBox::critical(this, "Error",
-                "Failed to start recording. Check console for details.");
+        // Get video and audio parameters
+        int videoWidth = m_screenCapture.getWidth();
+        int videoHeight = m_screenCapture.getHeight();
+        //int videoFps = QGuiApplication::primaryScreen()->refreshRate(); // Use primary screen's refresh rate
+        int videoFps = 60;
+
+        int audioSampleRate = m_audioCapture.getSampleRate();
+        int audioChannels = m_audioCapture.getChannels();
+
+        // Initialize and start the recording manager
+        if (!m_recordingManager->startRecording(
+            filePath.toStdString(),
+            videoWidth,
+            videoHeight,
+            videoFps,
+            audioSampleRate,
+            audioChannels)) {
+            QMessageBox::critical(this, "Error", "Failed to start recording. Check console for details.");
+            return; // Exit if recording failed to start
         }
+
+        // Connect the ScreenCapture's newFrameReady signal to RecordingManager's slot
+        // This is crucial: the RecordingManager now *receives* the frame, doesn't *pull* it.
+        connect(&m_screenCapture, &ScreenCapture::newFrameReady,
+            m_recordingManager.get(), &RecordingManager::onNewVideoFrame);
+
+        // Connect AudioCapture's signal to RecordingManager's slot
+        connect(&m_audioCapture, &AudioCapture::newAudioDataReady,
+            m_recordingManager.get(), &RecordingManager::onNewAudioData);
+
+        qDebug() << "Recording started, saving to:" << filePath;
     }
     else {
-        // Stop recording
+        // Disconnect signals when stopping recording
+        disconnect(&m_screenCapture, &ScreenCapture::newFrameReady,
+            m_recordingManager.get(), &RecordingManager::onNewVideoFrame);
+        disconnect(&m_audioCapture, &AudioCapture::newAudioDataReady,
+            m_recordingManager.get(), &RecordingManager::onNewAudioData);
+
         m_recordingManager->stopRecording();
+        qDebug() << "Recording stopped.";
+    }
+}
+
+void MainWindow::toggleStreaming()
+{
+    // Placeholder for streaming logic.
+    // You would typically have a separate StreamingManager or
+    // extend RecordingManager to handle streaming instead of recording to a file.
+    if (m_streamButton->text() == "Start Streaming") {
+        qDebug() << "Starting streaming...";
+        // Implement your streaming initialization here
+        // For example:
+        // if (m_streamingManager->startStreaming(streamUrl, videoWidth, videoHeight, videoFps, audioSampleRate, audioChannels)) {
+        //     connect(&m_screenCapture, &ScreenCapture::newFrameReady, m_streamingManager.get(), &StreamingManager::onNewVideoFrame);
+        //     connect(&m_audioCapture, &AudioCapture::newAudioDataReady, m_streamingManager.get(), &StreamingManager::onNewAudioData);
+        //     m_streamButton->setText("Stop Streaming");
+        // } else {
+        //     QMessageBox::critical(this, "Error", "Failed to start streaming.");
+        // }
+        m_streamButton->setText("Stop Streaming"); // For demonstration
+    }
+    else {
+        qDebug() << "Stopping streaming...";
+        // Implement your streaming stopping logic here
+        // For example:
+        // disconnect(&m_screenCapture, &ScreenCapture::newFrameReady, m_streamingManager.get(), &StreamingManager::onNewVideoFrame);
+        // disconnect(&m_audioCapture, &AudioCapture::newAudioDataReady, m_streamingManager.get(), &StreamingManager::onNewAudioData);
+        // m_streamingManager->stopStreaming();
+        m_streamButton->setText("Start Streaming");
     }
 }
 

@@ -29,6 +29,10 @@ bool ScreenCapture::initialize()
 
     QueryPerformanceFrequency(&m_qpcFreq); //initialize frequency
 
+    // Initialize m_frameBuffer once after screen dimensions are known
+	m_frameBytesPerLine = m_screenWidth * 4; // Assuming BGRA format
+	m_frameBuffer.resize(m_screenWidth * m_frameBytesPerLine );
+
     return true;
 }
 
@@ -132,8 +136,9 @@ bool ScreenCapture::initDuplication()
         return false;
     }
 
-    // Initialize QImage with the correct size
-    m_latestFrame = QImage(m_screenWidth, m_screenHeight, QImage::Format_ARGB32);
+    //// Initialize QImage with the correct size
+    //m_latestFrame = QImage(m_screenWidth, m_screenHeight, QImage::Format_ARGB32);
+    m_ptrInfo.PtrShapeBuffer.clear();
 
     return true;
 }
@@ -145,31 +150,26 @@ bool ScreenCapture::captureFrame()
         return false;
     }
 
-    // Release any previous frame
+    // Release any previous frame (from the desktop duplication API)
     if (m_acquiredDesktopImage) {
         m_acquiredDesktopImage->Release();
         m_acquiredDesktopImage = nullptr;
     }
 
-    // Get next frame
     IDXGIResource* desktopResource = nullptr;
     DXGI_OUTDUPL_FRAME_INFO frameInfo;
-    HRESULT hr = m_deskDupl->AcquireNextFrame(0, &frameInfo, &desktopResource);
+    HRESULT hr = m_deskDupl->AcquireNextFrame(0, &frameInfo, &desktopResource); // Use 0 timeout for preview logic
 
     if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-        // No new frame available
+        // No new frame available, simply return false. The timer will try again.
         return false;
     }
 
     if (FAILED(hr)) {
         if (hr == DXGI_ERROR_ACCESS_LOST) {
-            qDebug() << "Access lost to desktop duplication";
-            // Try to reinitialize
-            if (m_deskDupl) {
-                m_deskDupl->Release();
-                m_deskDupl = nullptr;
-            }
-            initDuplication();
+            qDebug() << "Access lost to desktop duplication. Reinitializing...";
+            cleanup(); // Clean up current resources
+            initialize(); // Reinitialize
         }
         else {
             qDebug() << "Failed to acquire frame. HRESULT:" << hr;
@@ -177,17 +177,17 @@ bool ScreenCapture::captureFrame()
         return false;
     }
 
-    // Get mouse info
+    // Get mouse info before QI for ID3D11Texture2D to use it for drawing
     int offsetX = m_outputDesc.DesktopCoordinates.left;
     int offsetY = m_outputDesc.DesktopCoordinates.top;
     getMouse(&m_ptrInfo, &frameInfo, offsetX, offsetY);
 
     // QI for ID3D11Texture2D
     hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&m_acquiredDesktopImage);
-    desktopResource->Release();
+    desktopResource->Release(); // IMPORTANT: Release the desktopResource immediately!
     if (FAILED(hr)) {
         qDebug() << "Failed to QI for ID3D11Texture2D";
-        m_deskDupl->ReleaseFrame();
+        m_deskDupl->ReleaseFrame(); // Ensure the frame is released
         return false;
     }
 
@@ -198,38 +198,34 @@ bool ScreenCapture::captureFrame()
     D3D11_MAPPED_SUBRESOURCE mappedResource;
     hr = m_d3dContext->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
     if (SUCCEEDED(hr)) {
-        // Lock the frame mutex while we update the frame
-        QMutexLocker locker(&m_frameMutex);
-
-        // Copy from staging texture to QImage
-        uchar* dest = m_latestFrame.bits();
+        // Copy from staging texture to m_frameBuffer (our internal CPU buffer)
+        uchar* dest = m_frameBuffer.data();
         uchar* src = (uchar*)mappedResource.pData;
-        const int bytesPerLine = m_screenWidth * 4;
 
         for (int y = 0; y < m_screenHeight; y++) {
-            memcpy(dest, src, bytesPerLine);
-            dest += m_latestFrame.bytesPerLine();
-            src += mappedResource.RowPitch;
+            memcpy(dest, src, m_frameBytesPerLine);
+            dest += m_frameBytesPerLine; // Advance by our calculated bytes per line
+            src += mappedResource.RowPitch; // Advance by the mapped resource's pitch
         }
 
         m_d3dContext->Unmap(m_stagingTexture, 0);
 
-        // Draw mouse cursor on top of the frame
-        drawMouse(m_latestFrame, &m_ptrInfo);
+        // Draw mouse cursor on top of the frame data in m_frameBuffer
+        drawMouse(m_frameBuffer.data(), m_screenWidth, m_screenHeight, m_frameBytesPerLine, &m_ptrInfo);
     }
     else {
         qDebug() << "Failed to map staging texture:" << hr;
+        m_deskDupl->ReleaseFrame(); // Ensure the frame is released even on map failure
+        return false;
     }
 
-    // Release frame
+    // IMPORTANT: Release the frame as soon as possible after copying data
     m_deskDupl->ReleaseFrame();
-    return true;
-}
 
-QImage ScreenCapture::getLatestFrame()
-{
-    QMutexLocker locker(&m_frameMutex);
-    return m_latestFrame;
+    // Now, emit the signal with the acquired and processed frame data
+    emit newFrameReady(m_frameBuffer.data(), m_screenWidth, m_screenHeight, m_frameBytesPerLine, m_ptrInfo);
+
+    return true;
 }
 
 HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* frameInfo, int offsetX, int offsetY)
@@ -273,33 +269,25 @@ HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* fram
     // No new shape
     if (frameInfo->PointerShapeBufferSize == 0)
     {
+        // If no new shape, ensure the buffer is clear and size is zero
+        ptrInfo->PtrShapeBuffer.clear(); // Clear the vector
+        ptrInfo->BufferSize = 0; // Keep this for now if other code relies on it, but vector.size() is better
         return hr;
     }
 
     // Old buffer too small
-    if (frameInfo->PointerShapeBufferSize > ptrInfo->BufferSize)
+    if (frameInfo->PointerShapeBufferSize > ptrInfo->PtrShapeBuffer.size())
     {
-        if (ptrInfo->PtrShapeBuffer)
-        {
-            delete[] ptrInfo->PtrShapeBuffer;
-            ptrInfo->PtrShapeBuffer = nullptr;
-        }
-        ptrInfo->PtrShapeBuffer = new (std::nothrow) BYTE[frameInfo->PointerShapeBufferSize];
-        if (!ptrInfo->PtrShapeBuffer)
-        {
-            qDebug() << "Failed to allocate memory for pointer shape";
-            ptrInfo->BufferSize = 0;
-            return E_OUTOFMEMORY;
-        }
-        // Update buffer size
-        ptrInfo->BufferSize = frameInfo->PointerShapeBufferSize;
+        // Resize the vector. This handles allocation/deallocation internally.
+        ptrInfo->PtrShapeBuffer.resize(frameInfo->PointerShapeBufferSize);
+        ptrInfo->BufferSize = frameInfo->PointerShapeBufferSize; // Update BufferSize if still used
     }
 
     UINT bufferSizeRequired;
     // Get shape
     hr = m_deskDupl->GetFramePointerShape(
         frameInfo->PointerShapeBufferSize,
-        reinterpret_cast<VOID*>(ptrInfo->PtrShapeBuffer),
+        reinterpret_cast<VOID*>(ptrInfo->PtrShapeBuffer.data()),
         &bufferSizeRequired,
         &(ptrInfo->ShapeInfo));
 
@@ -309,8 +297,7 @@ HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* fram
         {
             qDebug() << "Failed to get frame pointer shape. HRESULT:" << hr;
         }
-        delete[] ptrInfo->PtrShapeBuffer;
-        ptrInfo->PtrShapeBuffer = nullptr;
+        ptrInfo->PtrShapeBuffer.clear(); // Clear on failure
         ptrInfo->BufferSize = 0;
         return hr;
     }
@@ -318,10 +305,10 @@ HRESULT ScreenCapture::getMouse(PTR_INFO* ptrInfo, DXGI_OUTDUPL_FRAME_INFO* fram
     return hr;
 }
 
-void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
+void ScreenCapture::drawMouse(uchar* buffer, int width, int height, int bytesPerLine, PTR_INFO* ptrInfo)
 {
     // If pointer is not visible or there's no shape data, nothing to draw
-    if (!ptrInfo->Visible || !ptrInfo->PtrShapeBuffer) {
+    if (!ptrInfo->Visible || !ptrInfo->PtrShapeBuffer.data()) {
         return;
     }
 
@@ -331,16 +318,19 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
 
     // Get pointer shape information
     DXGI_OUTDUPL_POINTER_SHAPE_INFO shapeInfo = ptrInfo->ShapeInfo;
-    UINT width = shapeInfo.Width;
-    UINT height = shapeInfo.Height;
+    UINT cursorWidth = shapeInfo.Width;
+    UINT cursorHeight = shapeInfo.Height;
     UINT pitch = shapeInfo.Pitch;
-    BYTE* buffer = ptrInfo->PtrShapeBuffer;
+    BYTE* cursorBuffer = ptrInfo->PtrShapeBuffer.data();
 
     // Ensure the mouse cursor is within the image boundaries
-    if (x < 0 || y < 0 || x >= image.width() || y >= image.height()) {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
         return;
     }
 
+    // Create a temporary QImage wrapper around the buffer for QPainter operations
+    // This QImage does NOT own the data - it uses the buffer directly
+    QImage image(buffer, width, height, bytesPerLine, QImage::Format_ARGB32);
     QPainter painter(&image);
 
     // Handle different cursor types
@@ -348,22 +338,20 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
     case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME:
     {
         // Monochrome cursor (AND/XOR masks)
-        QImage cursorImage(width, height, QImage::Format_ARGB32);
+        QImage cursorImage(cursorWidth, cursorHeight, QImage::Format_ARGB32);
         cursorImage.fill(Qt::transparent);
-
         // XOR mask is in the first half, AND mask in the second half
-        int andMaskOffset = pitch * (height / 2);
+        int andMaskOffset = pitch * (cursorHeight / 2);
 
-        for (UINT row = 0; row < height / 2; row++) {
-            for (UINT col = 0; col < width; col++) {
+        for (UINT row = 0; row < cursorHeight / 2; row++) {
+            for (UINT col = 0; col < cursorWidth; col++) {
                 // Get AND and XOR mask values for this pixel
                 UINT byteIndex = row * pitch + col / 8;
                 UINT bitIndex = 7 - (col % 8); // Most significant bit first
-
-                bool andMask = (buffer[andMaskOffset + byteIndex] & (1 << bitIndex)) != 0;
-                bool xorMask = (buffer[byteIndex] & (1 << bitIndex)) != 0;
-
+                bool andMask = (cursorBuffer[andMaskOffset + byteIndex] & (1 << bitIndex)) != 0;
+                bool xorMask = (cursorBuffer[byteIndex] & (1 << bitIndex)) != 0;
                 QRgb color;
+
                 if (andMask) {
                     if (xorMask) {
                         // Inverted screen without transparency
@@ -384,31 +372,32 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
                         color = qRgba(0, 0, 0, 255); // Black
                     }
                 }
-
                 cursorImage.setPixel(col, row, color);
             }
         }
 
-        // Draw the cursor onto the image
+        // Draw the cursor onto the image buffer
         painter.drawImage(x, y, cursorImage);
         break;
     }
+
     case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR:
     {
         // Color cursor (BGRA format)
-        QImage cursorImage(buffer, width, height, pitch, QImage::Format_ARGB32);
+        QImage cursorImage(cursorBuffer, cursorWidth, cursorHeight, pitch, QImage::Format_ARGB32);
         painter.drawImage(x, y, cursorImage);
         break;
     }
+
     case DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR:
     {
         // Masked color cursor
-        QImage cursorImage(width, height, QImage::Format_ARGB32);
+        QImage cursorImage(cursorWidth, cursorHeight, QImage::Format_ARGB32);
         cursorImage.fill(Qt::transparent);
 
-        for (UINT row = 0; row < height; row++) {
-            BYTE* srcRow = buffer + (row * pitch);
-            for (UINT col = 0; col < width; col++) {
+        for (UINT row = 0; row < cursorHeight; row++) {
+            BYTE* srcRow = cursorBuffer + (row * pitch);
+            for (UINT col = 0; col < cursorWidth; col++) {
                 // BGRA format
                 BYTE b = srcRow[col * 4];
                 BYTE g = srcRow[col * 4 + 1];
@@ -426,15 +415,16 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
                         // Inverted area (XOR)
                         // For simplicity, just use black
                         cursorImage.setPixel(col, row, qRgba(0, 0, 0, 255));
+
                     }
                 }
+
                 else {
                     // Normal color
                     cursorImage.setPixel(col, row, qRgba(r, g, b, a));
                 }
             }
         }
-
         painter.drawImage(x, y, cursorImage);
         break;
     }
@@ -442,134 +432,6 @@ void ScreenCapture::drawMouse(QImage& image, PTR_INFO* ptrInfo)
         qDebug() << "Unknown cursor type:" << shapeInfo.Type;
         break;
     }
-}
-
-bool ScreenCapture::captureFrameAndRecord(FFmpegRecorder* recorder) {
-    if (!m_deskDupl) {
-        qDebug() << "No desktop duplicator available";
-        return false;
-    }
-
-    // Get next frame
-    IDXGIResource* desktopResource = nullptr;
-    DXGI_OUTDUPL_FRAME_INFO frameInfo;
-
-    // Try to acquire the next frame with a reasonable timeout
-    HRESULT hr = m_deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
-
-    if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-        // No new frame available - this is normal
-        return false;
-    }
-
-    if (FAILED(hr)) {
-        if (hr == DXGI_ERROR_ACCESS_LOST) {
-            qDebug() << "Access lost to desktop duplication";
-            // Release any previous frame
-            if (m_acquiredDesktopImage) {
-                m_acquiredDesktopImage->Release();
-                m_acquiredDesktopImage = nullptr;
-            }
-            // Try to reinitialize
-            if (m_deskDupl) {
-                m_deskDupl->Release();
-                m_deskDupl = nullptr;
-            }
-            initDuplication();
-        }
-        else {
-            qDebug() << "Failed to acquire frame. HRESULT:" << hr;
-        }
-        return false;
-    }
-
-    // Release any previous frame
-    if (m_acquiredDesktopImage) {
-        m_acquiredDesktopImage->Release();
-        m_acquiredDesktopImage = nullptr;
-    }
-
-    // Get mouse info
-    int offsetX = m_outputDesc.DesktopCoordinates.left;
-    int offsetY = m_outputDesc.DesktopCoordinates.top;
-    getMouse(&m_ptrInfo, &frameInfo, offsetX, offsetY);
-
-    // QI for ID3D11Texture2D
-    hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&m_acquiredDesktopImage);
-    desktopResource->Release();
-
-    if (FAILED(hr)) {
-        qDebug() << "Failed to QI for ID3D11Texture2D";
-        m_deskDupl->ReleaseFrame();
-        return false;
-    }
-
-    // Copy to staging texture
-    m_d3dContext->CopyResource(m_stagingTexture, m_acquiredDesktopImage);
-
-    // Map staging texture to read pixels
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    hr = m_d3dContext->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
-
-    if (SUCCEEDED(hr)) {
-        // Get current timestamp
-        LARGE_INTEGER qpcNow;
-        QueryPerformanceCounter(&qpcNow);
-        int64_t timestamp = (qpcNow.QuadPart * 1000) / m_qpcFreq.QuadPart;
-
-        // Copy from staging texture to a buffer for FFmpeg
-        unsigned char* frameBuffer = new unsigned char[m_screenWidth * m_screenHeight * 4];
-        uchar* dest = frameBuffer;
-        uchar* src = (uchar*)mappedResource.pData;
-
-        for (int y = 0; y < m_screenHeight; y++) {
-            memcpy(dest, src, m_screenWidth * 4);
-            dest += m_screenWidth * 4;
-            src += mappedResource.RowPitch;
-        }
-
-        m_d3dContext->Unmap(m_stagingTexture, 0);
-
-        // Also update our QImage for display purposes if needed
-        {
-            QMutexLocker locker(&m_frameMutex);
-            uchar* qImageDest = m_latestFrame.bits();
-            src = frameBuffer;
-            const int bytesPerLine = m_screenWidth * 4;
-
-            for (int y = 0; y < m_screenHeight; y++) {
-                memcpy(qImageDest, src, bytesPerLine);
-                qImageDest += m_latestFrame.bytesPerLine();
-                src += bytesPerLine;
-            }
-
-            // Draw mouse cursor on top of the frame
-            drawMouse(m_latestFrame, &m_ptrInfo);
-        }
-
-        // Send the frame to FFmpeg recorder
-        if (!recorder->sendVideoFrame(frameBuffer, timestamp)) {
-            qDebug() << "Failed to capture video frame";
-        }
-
-        // Clean up
-        delete[] frameBuffer;
-    }
-    else {
-        qDebug() << "Failed to map staging texture:" << hr;
-    }
-
-    // Release frame
-    m_deskDupl->ReleaseFrame();
-    return true;
-}
-
-int ScreenCapture::getWidth() {
-    return m_screenWidth;
-}
-
-int ScreenCapture::getHeight() {
-    return m_screenHeight;
 }
 
 void ScreenCapture::cleanup()

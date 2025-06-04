@@ -18,20 +18,25 @@
 #include <QProgressBar>
 #include <QDateTime>
 
+#include <memory>
+
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
 private slots:
-    void updateScreenCapture();
+    // This slot will receive the captured frame data from ScreenCapture
+    void onNewVideoFrameReady(const uchar* data, int width, int height, int bytesPerLine, const PTR_INFO& mousePtrInfo);
+
     void updateAudioVolume();
     void updateFPS();
     void toggleRecording();
+    void toggleStreaming();
     void onRecordingStateChanged(bool isRecording);
     void onRecordingError(const QString& errorMessage);
 
@@ -40,38 +45,36 @@ private:
     void saveSettings();
     void loadSettings();
 
-    QPushButton* m_recordButton;
+    ScreenCapture m_screenCapture;
+    AudioCapture m_audioCapture;
+    std::unique_ptr<RecordingManager> m_recordingManager;
+
+    QTimer m_captureTimer;
+    QTimer m_volumeTimer;
+    QTimer m_fpsUpdateTimer;
+
     QLabel* m_previewLabel;
     QTimer* m_previewTimer;
 
-    std::unique_ptr<RecordingManager> m_recordingManager;
-    QString m_lastSavePath;
-
-    ScreenCapture m_screenCapture;
-    QTimer m_captureTimer;
     QLabel* m_displayLabel;
-    int m_displayWidth;
-    int m_displayHeight;
-
-    // Audio capture related
-    AudioCapture m_audioCapture;
-    QTimer m_volumeTimer;
-    QProgressBar* m_volumeBar;
-    QProgressBar* m_desktopVolumeBar;
-    QProgressBar* m_micVolumeBar;
-
+    QLabel* m_fpsLabel;
+    QLabel* m_latencyLabel;
+    QPushButton* m_recordButton;
+    QPushButton* m_streamButton;
     VolumeMeter* m_inputMeter = nullptr;   // Mic/Aux
     VolumeMeter* m_outputMeter = nullptr;  // Desktop Audio
-
     QLabel* m_inputDbLabel = nullptr;
     QLabel* m_outputDbLabel = nullptr;
 
-    // FPS and metrics tracking
-    QTimer m_fpsUpdateTimer;
     qint64 m_lastFrameTime;
     int m_frameCount;
-    QLabel* m_fpsLabel;
-    QLabel* m_latencyLabel;
+    QString m_lastSavePath;
+    int m_displayWidth = 0;
+    int m_displayHeight = 0;
+
+    QProgressBar* m_volumeBar;
+    QProgressBar* m_desktopVolumeBar;
+    QProgressBar* m_micVolumeBar;
 
     float m_smoothedVolume = -60.0f; // Initialize to minimum value
     QString m_currentBarColor = "#4CAF50"; // Start with green

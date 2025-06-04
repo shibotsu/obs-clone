@@ -7,7 +7,7 @@ FFmpegRecorder::FFmpegRecorder()
     : outputContext(nullptr), videoStream(nullptr), audioStream(nullptr),
     videoCodecContext(nullptr), audioCodecContext(nullptr),
     swsContext(nullptr), swrContext(nullptr), videoFrameCount(0), audioFrameCount(0),
-    startTimestamp(-1), m_lastAudioPts(0), m_audioSamplesProcessed(0), m_audioFifo(nullptr), m_aacFrameSize(0) {
+    startTimestamp(-1), m_audioSamplesProcessed(0), m_audioFifo(nullptr), m_aacFrameSize(0) {
 }
 
 bool FFmpegRecorder::initialize(const char* outputFile, int width, int height, int fps,
@@ -41,7 +41,7 @@ bool FFmpegRecorder::initialize(const char* outputFile, int width, int height, i
     videoCodecContext->bit_rate = 5000000;
     videoCodecContext->gop_size = fps * 2;
 
-    av_opt_set(videoCodecContext->priv_data, "preset", "medium", 0);
+    av_opt_set(videoCodecContext->priv_data, "crf", "23", 0); 
 
     if (avcodec_open2(videoCodecContext, videoCodec, nullptr) < 0) return false;
 
@@ -143,7 +143,6 @@ bool FFmpegRecorder::initialize(const char* outputFile, int width, int height, i
 
     startTimestamp = -1;
     m_audioTimingInitialized = false;
-    m_totalAudioSamplesQueued = 0;
     m_audioSamplesProcessed = 0;
 
     // Get high-resolution start time for consistent timestamping
@@ -163,17 +162,23 @@ bool FFmpegRecorder::sendVideoFrame(unsigned char* rgbaData, int64_t timestamp) 
         return false;
     }
 
-    // CRITICAL FIX: Use consistent recording timestamp instead of external timestamp
-    int64_t recordingTimestamp = getRecordingTimestamp();
+    // Remove this line, it's not needed with the new PTS calculation
+    // int64_t recordingTimestamp = getRecordingTimestamp(); 
 
-    // Initialize startTimestamp if not set
+    // Initialize startTimestamp if not set (This logic is still good for *initial* alignment)
     if (startTimestamp == -1) {
-        startTimestamp = recordingTimestamp;
+        startTimestamp = getRecordingTimestamp(); // Use wall-clock for overall start
         fprintf(stderr, "Video start timestamp initialized: %" PRId64 " ms\n", startTimestamp);
     }
 
-    // Calculate relative timestamp
-    int64_t relativeTimestamp = recordingTimestamp - startTimestamp;
+    // Calculate relative timestamp based on the incoming 'timestamp' from the capture source,
+    // adjusted by startTimestamp. This is for logging/debugging the capture time,
+    // but not for the final PTS if we are using frame count.
+    // If you *must* use the timestamp argument, use this:
+    // int64_t relativeTimestamp = timestamp - startTimestamp;
+    // However, for strict linearity, it's better to rely on frame count for video.
+    // So, let's keep it simple and base it on frameCount.
+    int64_t current_video_pts = videoFrameCount; // This is the frame number in video timebase (1/fps)
 
     // Allocate video frame
     AVFrame* frame = av_frame_alloc();
@@ -208,18 +213,23 @@ bool FFmpegRecorder::sendVideoFrame(unsigned char* rgbaData, int64_t timestamp) 
     sws_scale(swsContext, srcData, srcLinesize, 0,
         videoCodecContext->height, frame->data, frame->linesize);
 
-    // Convert timestamps properly from milliseconds to video timebase
-    frame->pts = av_rescale_q(relativeTimestamp,
-        AVRational{ 1, 1000 },
-        videoCodecContext->time_base);
+    // --- CRITICAL CHANGE FOR VIDEO PTS ---
+    // Video PTS is now based on sequential frame count.
+    // This creates a perfectly monotonic video timeline that aligns with audio.
+    frame->pts = current_video_pts;
 
     // Encode frame
     bool success = (encodeVideoFrame(frame) >= 0);
 
-    fprintf(stderr, "Video PTS: %" PRId64 " (%.3fs), relative timestamp: %" PRId64 " ms\n",
+    // Increment frame count *only if encoding was successful*
+    if (success) {
+        videoFrameCount++;
+    }
+
+    fprintf(stderr, "Video PTS: %" PRId64 " (%.3fs), frame count: %d\n",
         frame->pts,
         (double)frame->pts * av_q2d(videoCodecContext->time_base),
-        relativeTimestamp);
+        videoFrameCount); // Log videoFrameCount for clarity
 
     // Free frame
     av_frame_free(&frame);
@@ -232,26 +242,12 @@ bool FFmpegRecorder::processAudio(unsigned char* audioData, int dataSize, int64_
         return false;
     }
 
-    // Use consistent wall-clock timestamp
-    int64_t recordingTimestamp = getRecordingTimestamp();
-
-    // Initialize audio timing
     if (!m_audioTimingInitialized) {
         m_audioTimingInitialized = true;
-
-        if (startTimestamp == -1) {
-            startTimestamp = recordingTimestamp;
-            fprintf(stderr, "Audio start timestamp initialized: %" PRId64 " ms\n", startTimestamp);
-        }
-
-        m_audioStartTimestamp = startTimestamp;
-        m_lastAudioPts = 0; // This can remain 0, as we will derive PTS differently
-        m_audioSamplesProcessed = 0;
-
-        fprintf(stderr, "Audio timing initialized at recording start\n");
+        // m_audioSamplesProcessed was already set to 0 in initialize().
+        // This is where the *first* audio processing event happens for the recording.
+        fprintf(stderr, "Audio processing timing initialized for this recording.\n");
     }
-
-    // int64_t relativeTimestamp = recordingTimestamp - startTimestamp; // Keep for logging if needed
 
     AVSampleFormat inputFormat = AV_SAMPLE_FMT_FLT;
     int bytesPerSample = av_get_bytes_per_sample(inputFormat);
@@ -276,10 +272,7 @@ bool FFmpegRecorder::processAudio(unsigned char* audioData, int dataSize, int64_
         return false;
     }
 
-    m_totalAudioSamplesQueued += convertedFrame->nb_samples;
-
-    // fprintf(stderr, "Audio processed %d samples, relative timestamp: %" PRId64 " ms\n",
-    //     numSamples, relativeTimestamp); // You can keep this for debugging if you want
+    // m_totalAudioSamplesQueued += convertedFrame->nb_samples; // Not directly used for PTS calculation now
 
     av_frame_free(&convertedFrame);
 
@@ -302,54 +295,18 @@ bool FFmpegRecorder::processAudio(unsigned char* audioData, int dataSize, int64_
 
         av_audio_fifo_read(m_audioFifo, (void**)outputFrame->data, m_aacFrameSize);
 
-        // --- CRITICAL FIX START ---
-        // Calculate the PTS for the audio frame based on the wall-clock recording time
-        // This ensures audio frames are timestamped relative to when they "should" be played
-        // based on the overall recording duration.
-        int64_t currentRecordingRelativeMs = recordingTimestamp - startTimestamp;
-
-        // Estimate the PTS for this audio frame.
-        // It's the total samples processed so far, converted to the audio timebase.
-        // This effectively *pushes* audio frames forward in time if the audio processing
-        // is lagging the real-time clock.
+        // --- CORRECTED PTS CALCULATION ---
+        // Calculate PTS based on the total number of samples *that have been encoded and sent out*.
+        // This ensures the audio stream's PTS progresses at the exact pace dictated by its sample rate.
         outputFrame->pts = av_rescale_q(
             m_audioSamplesProcessed,
-            AVRational{ 1, audioCodecContext->sample_rate }, // Input timebase: samples
-            audioStream->time_base                           // Output timebase: audio stream's timebase
+            AVRational{ 1, audioCodecContext->sample_rate }, // Source is samples at sample_rate
+            audioStream->time_base                          // Destination is stream's time_base
         );
 
-        // Adjust PTS based on the relative recording timestamp.
-        // This attempts to synchronize the audio PTS with the video's wall-clock driven PTS.
-        // If the audio is behind, its PTS will be made larger (later) to catch up.
-        // If the audio is ahead, its PTS will be made smaller (earlier) to align.
-        int64_t expectedAudioPtsAtCurrentTime = av_rescale_q(
-            currentRecordingRelativeMs,
-            AVRational{ 1, 1000 },
-            audioStream->time_base
-        );
+        m_audioSamplesProcessed += m_aacFrameSize; // Increment AFTER calculating PTS for the current frame
 
-        // If the current audio PTS is significantly behind the expected PTS based on wall-clock,
-        // we advance it. This helps correct for any processing delays.
-        // A threshold of 50ms is a common starting point for small adjustments.
-        int64_t pts_diff_ms = av_rescale_q(
-            expectedAudioPtsAtCurrentTime - outputFrame->pts,
-            audioStream->time_base,
-            AVRational{ 1, 1000 }
-        );
-
-        // Apply a correction if the audio is falling behind.
-        // This is a dynamic adjustment to keep audio in sync with the video's progression.
-        // You might need to experiment with the 50ms threshold.
-        if (pts_diff_ms > 50) {
-            outputFrame->pts = expectedAudioPtsAtCurrentTime;
-            fprintf(stderr, "[AUDIO SYNC] Correcting audio PTS from %" PRId64 " to %" PRId64 " (Diff: %" PRId64 "ms)\n",
-                outputFrame->pts - av_rescale_q(50, audioStream->time_base, AVRational{ 1, 1000 }), outputFrame->pts, pts_diff_ms);
-        }
-        // --- CRITICAL FIX END ---
-
-        m_audioSamplesProcessed += m_aacFrameSize;
-
-        double frameTimeSeconds = (double)outputFrame->pts * av_q2d(audioStream->time_base); // Use audioStream->time_base
+        double frameTimeSeconds = (double)outputFrame->pts * av_q2d(audioStream->time_base);
         fprintf(stderr, "Audio frame PTS: %" PRId64 " (%.3fs), samples processed: %" PRId64 "\n",
             outputFrame->pts, frameTimeSeconds, m_audioSamplesProcessed);
 
@@ -434,6 +391,13 @@ AVFrame* FFmpegRecorder::convertAudioFormat(unsigned char* audioData, int numSam
         return nullptr;
     }
 
+    fprintf(stderr, "Pre-swr_convert: inputFrame->format = %s, channels = %d, nb_samples = %d\n",
+        av_get_sample_fmt_name((AVSampleFormat)inputFrame->format),
+        inputFrame->ch_layout.nb_channels, inputFrame->nb_samples);
+    fprintf(stderr, "Pre-swr_convert: Output format = %s, channels = %d\n",
+        av_get_sample_fmt_name(audioCodecContext->sample_fmt),
+        audioCodecContext->ch_layout.nb_channels);
+
     // Convert FLT to FLTP (or whatever format the codec requires)
     int ret = swr_convert(swrContext,
         outputFrame->data, numSamples,
@@ -453,6 +417,13 @@ AVFrame* FFmpegRecorder::convertAudioFormat(unsigned char* audioData, int numSam
 }
 
 bool FFmpegRecorder::sendAudioFrame(unsigned char* audioData, int dataSize, int64_t timestamp) {
+    // Set the unified recording start timestamp if this is the very first frame (video or audio)
+    if (startTimestamp == -1) {
+        startTimestamp = getRecordingTimestamp(); // Capture the current elapsed time
+        fprintf(stderr, "Unified recording start timestamp initialized by audio (from sendAudioFrame): %" PRId64 " ms\n", startTimestamp);
+    }
+
+    // Now call the private processing function
     return processAudio(audioData, dataSize, timestamp);
 }
 
@@ -566,7 +537,6 @@ void FFmpegRecorder::close() {
     startTimestamp = -1;
 
     m_audioTimingInitialized = false;
-    m_totalAudioSamplesQueued = 0;
 }
 
 FFmpegRecorder::~FFmpegRecorder() {
