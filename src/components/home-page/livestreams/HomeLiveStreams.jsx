@@ -6,11 +6,14 @@ import {
   CarouselNavContainer,
   CarouselViewport,
   CarouselSlider,
+  Text,
   tokens,
   makeStyles,
 } from "@fluentui/react-components";
 import HomePageStreamItem from "./HomePageStreamItem";
 import useResponsiveSlides from "./itemsPerSlide";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../../context/AuthContext";
 
 const livestreams = [
   {
@@ -134,6 +137,13 @@ const useClasses = makeStyles({
   dropdown: {
     maxWidth: "max-content",
   },
+  emptyState: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "150px", // adjust height as needed
+    textAlign: "center",
+  },
 });
 
 function chunkArray(array, size) {
@@ -147,51 +157,74 @@ function chunkArray(array, size) {
 const HomeLiveStreams = () => {
   const classes = useClasses();
   const itemsPerSlide = useResponsiveSlides();
-  const slides = chunkArray(livestreams, itemsPerSlide);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["homePageLivestreams"],
+    queryFn: async () => {
+      const response = await fetch("http://127.0.0.1:8000/api/channels");
+
+      if (!response.ok) {
+        return new Error("Unable to load livestreams.");
+      }
+
+      return response.json();
+    },
+  });
+
+  const channels = Array.isArray(data?.channels) ? data?.channels : [];
+  const slides = chunkArray(channels, itemsPerSlide);
 
   return (
     <div>
-      <Carousel
-        align="start"
-        className={classes.carousel}
-        whitespace={true}
-        announcement={(index) =>
-          `Carousel slide ${index + 1} of ${slides.length}`
-        }
-      >
-        <CarouselViewport>
-          <CarouselSlider cardFocus>
-            {slides.map((group, slideIndex) => (
-              <CarouselCard key={slideIndex}>
-                <div className={classes.livestreamGroup}>
-                  {group.map((livestream) => (
-                    <HomePageStreamItem
-                      key={livestream.id}
-                      id={livestream.id}
-                      title={livestream.title}
-                      streamer={livestream.streamer}
-                      game={livestream.game}
-                      viewers={livestream.viewers}
-                      thumbnail={livestream.thumbnail}
-                    />
-                  ))}
-                </div>
-              </CarouselCard>
-            ))}
-          </CarouselSlider>
-        </CarouselViewport>
-        <CarouselNavContainer
-          layout="inline"
-          next={{ "aria-label": "go to next" }}
-          prev={{ "aria-label": "go to prev" }}
+      {channels.length === 0 ? (
+        <Text size={600} className={classes.emptyState}>
+          No livestreams available currently.
+        </Text>
+      ) : (
+        <Carousel
+          align="start"
+          className={classes.carousel}
+          whitespace={true}
+          announcement={(index) =>
+            `Carousel slide ${index + 1} of ${slides.length}`
+          }
         >
-          <CarouselNav>
-            {(index) => (
-              <CarouselNavButton aria-label={`Carousel Nav Button ${index}`} />
-            )}
-          </CarouselNav>
-        </CarouselNavContainer>
-      </Carousel>
+          <CarouselViewport>
+            <CarouselSlider cardFocus>
+              {slides.map((group, slideIndex) => (
+                <CarouselCard key={slideIndex}>
+                  <div className={classes.livestreamGroup}>
+                    {group.map((channels) => (
+                      <HomePageStreamItem
+                        key={channels.id}
+                        id={channels.user_id}
+                        title={channels.title}
+                        streamer={channels.streamer_name}
+                        game={channels.stream_category}
+                        viewers={0}
+                        thumbnail={channels.thumbnail}
+                      />
+                    ))}
+                  </div>
+                </CarouselCard>
+              ))}
+            </CarouselSlider>
+          </CarouselViewport>
+          <CarouselNavContainer
+            layout="inline"
+            next={{ "aria-label": "go to next" }}
+            prev={{ "aria-label": "go to prev" }}
+          >
+            <CarouselNav>
+              {(index) => (
+                <CarouselNavButton
+                  aria-label={`Carousel Nav Button ${index}`}
+                />
+              )}
+            </CarouselNav>
+          </CarouselNavContainer>
+        </Carousel>
+      )}
     </div>
   );
 };

@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import WatchPage from "./pages/watch-page/WatchPage";
+import StartStreamingPage from "./pages/start-stream-page/StartStreamPage";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => {
                   element={<StreamerProfilePage />}
                 />
                 <Route path="/search-results" element={<SearchResultsPage />} />
+                <Route path="/watch/:id" element={<WatchPage />} />
               </Route>
 
               <Route element={<AuthLayout />}>
@@ -36,7 +38,7 @@ const App = () => {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/watch/:id" element={<WatchPage />} />
+                <Route path="/start-stream" element={<StartStreamingPage />} />
               </Route>
             </Routes>
           </Router>

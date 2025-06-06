@@ -156,9 +156,7 @@ const StreamerProfilePage = () => {
                 <Text className={classes.aboutMeText}>{aboutMeText}</Text>
               ) : (
                 <div className={classes.emptyState}>
-                  <Text size={400}>
-                    No information added yet. Click Edit to add your story!
-                  </Text>
+                  <Text size={400}>No information added yet.</Text>
                 </div>
               )}
             </div>

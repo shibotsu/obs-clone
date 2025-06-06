@@ -137,6 +137,8 @@ const ProfilePage = () => {
 
       const imageUrl = data.profile_picture || URL.createObjectURL(file);
 
+      console.log("ImageURL: " + imageUrl);
+
       const updatedUser = { ...user, profile_picture: imageUrl };
       setUser(updatedUser);
 

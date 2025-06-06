@@ -4,6 +4,8 @@ import { Button, makeStyles } from "@fluentui/react-components";
 import { HomeSideBar } from "../../components/sidebar/HomeSidebar";
 import HomeLiveStreams from "../../components/home-page/livestreams/HomeLiveStreams";
 import MostFollowedStreamers from "../../components/home-page/most-followed/MostFollowedStreamers";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 /* const useStyles = makeStyles({
   livestreamsGrid: {
@@ -23,6 +25,9 @@ import MostFollowedStreamers from "../../components/home-page/most-followed/Most
 }); */
 
 const HomePage = () => {
+  const { isLoggedIn, user } = useAuth();
+  let navigate = useNavigate();
+
   return (
     <div className="home-container">
       <div className="livestreams-header">
@@ -32,13 +37,16 @@ const HomePage = () => {
             Livestreams
           </Text>
         </div>
-        <Button
-          shape="rounded"
-          appearance="primary"
-          className="start-streaming-button"
-        >
-          Start streaming
-        </Button>
+        {isLoggedIn && (
+          <Button
+            shape="rounded"
+            appearance="primary"
+            className="start-streaming-button"
+            onClick={() => navigate("/start-stream")}
+          >
+            Start streaming
+          </Button>
+        )}
       </div>
       <main className="main-page-container">
         <HomeLiveStreams />

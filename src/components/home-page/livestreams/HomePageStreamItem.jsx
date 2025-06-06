@@ -5,6 +5,7 @@ import {
   Text,
   makeStyles,
 } from "@fluentui/react-components";
+import { useNavigate } from "react-router-dom";
 
 const useStyles = makeStyles({
   streamCard: {
@@ -28,11 +29,16 @@ const HomePageStreamItem = ({
   thumbnail,
 }) => {
   const styles = useStyles();
+  let navigate = useNavigate();
 
   return (
-    <Card id={id} className={styles.streamCard}>
+    <Card
+      id={id}
+      className={styles.streamCard}
+      onClick={() => navigate(`/watch/${id}`)}
+    >
       <Image src={thumbnail} className={styles.streamThumbnail} />
-      <Caption1>{viewers}</Caption1>
+      <Caption1>{viewers} viewers</Caption1>
       <Text>{title}</Text>
       <Text>{streamer}</Text>
       <Text>{game}</Text>

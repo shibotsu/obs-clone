@@ -15,30 +15,6 @@ import { useAuth } from "../../context/AuthContext";
 import { Dismiss24Regular, Navigation20Filled } from "@fluentui/react-icons";
 import FollowingSidebarItem from "./FollowingSidebarItem";
 
-const channels = [
-  {
-    id: 1,
-    name: "Streamer1",
-    avatar:
-      "https://cdn3.iconfinder.com/data/icons/business-avatar-1/512/3_avatar-1024.png",
-  },
-  { id: 2, name: "Streamer2", avatar: "" },
-  { id: 3, name: "Streamer3", avatar: "" },
-  { id: 4, name: "Streamer4", avatar: "" },
-  { id: 5, name: "Streamer5", avatar: "" },
-  { id: 6, name: "Streamer6", avatar: "" },
-  { id: 7, name: "Streamer7", avatar: "" },
-  { id: 8, name: "Streamer8", avatar: "" },
-  { id: 9, name: "Streamer9", avatar: "" },
-  { id: 10, name: "Streamer10", avatar: "" },
-  { id: 11, name: "Streamer11", avatar: "" },
-  { id: 12, name: "Streamer12", avatar: "" },
-  { id: 13, name: "Streamer13", avatar: "" },
-  { id: 14, name: "Streamer14", avatar: "" },
-  { id: 15, name: "Streamer15", avatar: "" },
-  { id: 16, name: "Streamer16", avatar: "" },
-];
-
 const useStyles = makeStyles({
   root: {
     overflow: "hidden",
@@ -108,6 +84,8 @@ export const HomeSideBar = () => {
   const styles = useStyles();
 
   const [isOpen, setIsOpen] = useState(false);
+
+  console.log(token);
 
   // all Drawers need manual focus restoration attributes
   // unless (as in the case of some inline drawers, you do not want automatic focus restoration)

@@ -37,7 +37,7 @@ const Header = () => {
         <img
           onClick={() => navigate("/")}
           className="logo"
-          src="logo.png"
+          src="/logo.png"
           alt="Logo"
         />
 
@@ -57,7 +57,7 @@ const Header = () => {
                           src: user.profile_picture,
                         }
                       : {
-                          src: "profile_pic_placeholder.png",
+                          src: "/profile_pic_placeholder.png",
                         }
                   }
                 />
