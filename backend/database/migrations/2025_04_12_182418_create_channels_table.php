@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('stream_title')->nullable();
             $table->text('stream_description')->nullable();
             $table->string('stream_category')->nullable();
+            $table->string('thumbnail')->nullable()->default(null);
             $table->timestamps();
         });
     }
