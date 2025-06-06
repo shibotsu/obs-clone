@@ -7,7 +7,9 @@ use App\Models\Stream;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use function Laravel\Prompts\error;
 
 class ChannelController extends Controller
 {
@@ -44,12 +46,7 @@ class ChannelController extends Controller
         $channel = $user->channel;
 
         $data = $request->validate([
-            'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
-            'is_live' => 'nullable|boolean',
-            'stream_title' => 'nullable|string|max:255',
-            'stream_description' => 'nullable|string',
-            'stream_category' => 'nullable|string|max:255',
         ]);
 
         $channel->update($data);
@@ -59,51 +56,53 @@ class ChannelController extends Controller
     public function start(Request $request)
     {
         $request->validate([
+            'stream_title' => 'nullable|string|max:255',
+            'stream_description' => 'nullable|string',
+            'stream_category' => 'nullable|string|max:255',
             'stream_key' => 'required|string',
+            'thumbnail' => 'nullable',
         ]);
 
         $channel = Channel::where('stream_key', $request->stream_key)->firstOrFail();
+        if(!$channel) {
+            return response()->json(["error" => "Channel not found."], 404);
+        }
 
-        // End any previous live streams
-        Stream::where('channel_id', $channel->id)->where('is_live', true)
-            ->update(['is_live' => false, 'end_time' => now()]);
+        if ($channel->is_live) {
+            return response()->json(["error" => "Channel is already live."], 400);
+        }
+        $path = null;
+        if ($request->hasFile('thumbnail')) {
+            // Delete old thumbnail if exists
+            if ($channel->thumbnail && Storage::disk('public')->exists($channel->thumbnail)) {
+                Storage::disk('public')->delete($channel->thumbnail);
+            }
 
-        $stream = Stream::create([
-            'channel_id' => $channel->id,
-            'title' => $request->input('title', null),
-            'start_time' => now(),
+            // Store new thumbnail
+            $path = $request->file('thumbnail')->store('thumbnails', 'public');
+        }
+
+        $channel->update([
             'is_live' => true,
+            'stream_title' => request('stream_title'),
+            'stream_description' => request('stream_description'),
+            'stream_category' => request('stream_category'),
+            'thumbnail' => $path,
         ]);
+        return response()->json(["message" => "Channel is live."], 200);
 
-        // Optionally set channel as live
-        $channel->is_live = true;
-        $channel->save();
-
-        return response()->json(['stream' => $stream]);
     }
 
     // End a stream (called when streaming ends)
     public function end(Request $request)
     {
         $request->validate([
-            'stream_key' => 'required|string',
+            'user_id' => 'required|integer|exists:users,id',
         ]);
-
-        $channel = Channel::where('stream_key', $request->stream_key)->firstOrFail();
-
-        $stream = Stream::where('channel_id', $channel->id)
-            ->where('is_live', true)
-            ->latest('start_time')
-            ->first();
-
-        if ($stream) {
-            $stream->update([
-                'end_time' => now(),
-                'is_live' => false,
-            ]);
+        $channel = Channel::where('user_id', $request->user_id)->firstOrFail();
+        if(!$channel) {
+            return response()->json(["error" => "Channel not found."], 404);
         }
-
-        // Optionally set channel as offline
         $channel->is_live = false;
         $channel->save();
 
@@ -151,5 +150,18 @@ class ChannelController extends Controller
         }
         $host = request()->getHost();
         return response()->json(["channel" => $channel, "host" => $host]);
+    }
+    public function index() {
+        $channels = Channel::where('is_live', true)->get();
+
+        foreach ($channels as $channel) {
+
+                $channel->thumbnail = $channel->thumbnail
+                    ? asset('storage/' . $channel->thumbnail)
+                    : null;
+
+        }
+
+        return response()->json(["channels" => $channels]);
     }
 }
