@@ -31,6 +31,8 @@ const Header = () => {
   let navigate = useNavigate();
   const classes = useStyles();
 
+  console.log(user.profile_picture);
+
   return (
     <FluentProvider theme={webLightTheme}>
       <header>
@@ -48,17 +50,12 @@ const Header = () => {
             <Menu>
               <MenuTrigger disableButtonEnhancement style={{}}>
                 <Avatar
-                  name={user?.username}
-                  size={34}
-                  className="avatar"
+                  name={user.name}
                   image={
-                    user?.profile_picture && user.profile_picture !== "none"
-                      ? {
-                          src: user.profile_picture,
-                        }
-                      : {
-                          src: "/profile_pic_placeholder.png",
-                        }
+                    user.profile_picture &&
+                    !user.profile_picture.includes("/none")
+                      ? { src: user.profile_picture }
+                      : { src: "/profile_pic_placeholder.png" }
                   }
                 />
               </MenuTrigger>

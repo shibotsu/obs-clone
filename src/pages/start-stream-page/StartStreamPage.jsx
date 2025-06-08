@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Button,
   Input,
@@ -27,7 +27,6 @@ import {
 } from "@fluentui/react-icons";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
-import { use } from "react";
 
 const useStyles = makeStyles({
   container: {
@@ -112,6 +111,7 @@ const StartStreamingPage = () => {
   const [success, setSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
   const [thumbnail, setThumbnail] = useState(null);
+  const [isLive, setIsLive] = useState(false);
   const fileInputRef = useRef(null);
   const { token, user } = useAuth();
 
@@ -129,7 +129,7 @@ const StartStreamingPage = () => {
       );
 
       if (!response.ok) {
-        return new Error("Unable to fetch channel data.");
+        throw new Error("Unable to fetch channel data.");
       }
 
       return response.json();
@@ -138,20 +138,45 @@ const StartStreamingPage = () => {
 
   const channel = data?.channel;
 
+  // Set input fields to channel values when data loads
+  useEffect(() => {
+    if (channel) {
+      setStreamName(channel.stream_title || "");
+      setDescription(channel.stream_description || "");
+      setSelectedCategory(channel.stream_category || "");
+      setStreamKey(channel.stream_key || "");
+      // If the channel is live, show success state
+      if (channel.is_live) {
+        setSuccess(true);
+      }
+    }
+  }, [channel]);
+
   const startStreamMutation = useMutation({
     mutationKey: ["startStream"],
-    mutationFn: async (payload) => {
+    mutationFn: async (formData) => {
       const response = await fetch("http://127.0.0.1:8000/api/startstream", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // DON'T set Content-Type header - let browser set it with boundary for FormData
         },
-        body: JSON.stringify(payload),
+        body: formData, // Now expects FormData instead of JSON
       });
+
       if (!response.ok) {
-        return new Error("Unable to start stream.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Unable to start stream.");
       }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refetch channel data to get updated status
+      refetch();
+    },
+    onError: (error) => {
+      console.error("Start stream error:", error);
     },
   });
 
@@ -160,7 +185,6 @@ const StartStreamingPage = () => {
   const stopStreamMutation = useMutation({
     mutationKey: ["stopStream"],
     mutationFn: async () => {
-      console.log("Calling stop stream API");
       const response = await fetch("http://127.0.0.1:8000/api/endstream", {
         method: "PUT",
         headers: {
@@ -169,8 +193,42 @@ const StartStreamingPage = () => {
         },
         body: JSON.stringify(endStreamData),
       });
+
+      if (!response.ok) {
+        throw new Error("Unable to stop stream.");
+      }
+
+      return response.json();
     },
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      refetch();
+      setSuccess(false);
+      setStreamName("");
+      setDescription("");
+      setSelectedCategory("");
+      setThumbnail(null);
+    },
+  });
+
+  const { mutateAsync: regenerateKeyMutate } = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/channel/${user.id}/newKey`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Unable to regenerate new key.");
+      }
+
+      return response.json();
+    },
+    // Remove onSuccess from here - we'll handle it manually
   });
 
   // Sample categories - replace with your actual categories
@@ -198,28 +256,38 @@ const StartStreamingPage = () => {
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
-    const payload = {
-      stream_title: streamName,
-      stream_description: description,
-      stream_category: selectedCategory,
-      stream_key: channel?.stream_key,
-      thumbnail: thumbnail,
-    };
+    // Create FormData instead of JSON payload
+    const formData = new FormData();
+    formData.append("stream_title", streamName);
+    formData.append("stream_description", description);
+    formData.append("stream_category", selectedCategory);
+    formData.append("stream_key", channel?.stream_key);
 
-    console.log(channel.stream_key);
+    // Only append thumbnail if one is selected
+    if (thumbnail) {
+      formData.append("thumbnail", thumbnail);
+    }
 
-    await startStreamMutation.mutateAsync(payload);
-
-    setStreamKey(channel?.stream_key);
-    setSuccess(true);
+    try {
+      await startStreamMutation.mutateAsync(formData);
+      setStreamKey(channel?.stream_key);
+      setSuccess(true);
+    } catch (error) {
+      setError(error.message || "Failed to start stream");
+    }
   };
 
   const handleCopyStreamKey = async () => {
     try {
-      await navigator.clipboard.writeText(streamKey);
+      const keyToCopy = streamKey || channel?.stream_key || "";
+      if (!keyToCopy) {
+        setError("No stream key available to copy");
+        return;
+      }
+
+      await navigator.clipboard.writeText(keyToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -227,21 +295,27 @@ const StartStreamingPage = () => {
     }
   };
 
-  const handleReset = () => {
-    setStreamName("");
-    setDescription("");
-    setSelectedCategory("");
-    setStreamKey("");
-    setSuccess(false);
-    setError("");
-    setIsLoading(false);
-    setCopied(false);
-  };
-
   const handleThumbnailClick = () => {
     fileInputRef.current?.click();
   };
 
+  const handleRegenerateKey = async () => {
+    try {
+      const response = await regenerateKeyMutate();
+      if (response && response.channel && response.channel.stream_key) {
+        setStreamKey(response.channel.stream_key);
+
+        setSuccess(true);
+        setError("");
+      } else {
+        console.error("Invalid response structure:", response);
+        setError("Invalid response from server - no stream key received.");
+      }
+    } catch (error) {
+      console.error("Regenerate key error:", error);
+      setError("Failed to regenerate stream key: " + error.message);
+    }
+  };
   const handleThumbnailChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setThumbnail(e.target.files[0]);
@@ -341,73 +415,84 @@ const StartStreamingPage = () => {
             />
           )}
 
-          {!success && (
+          {!success && !Boolean(channel?.is_live) ? (
             <div className={styles.buttonGroup}>
-              {channel?.is_live === 0 ? (
-                <Button
-                  appearance="primary"
-                  icon={isLoading ? <Spinner size="tiny" /> : <PlayRegular />}
-                  onClick={handleStartStream}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Generating..." : "Start Stream"}
-                </Button>
-              ) : (
-                <Button onClick={() => stopStreamMutation.mutateAsync()}>
-                  End Stream
-                </Button>
-              )}
+              <Button
+                appearance="primary"
+                icon={
+                  startStreamMutation.isPending ? (
+                    <Spinner size="tiny" />
+                  ) : (
+                    <PlayRegular />
+                  )
+                }
+                onClick={handleStartStream}
+                disabled={startStreamMutation.isPending}
+              >
+                {startStreamMutation.isPending
+                  ? "Generating..."
+                  : "Start Stream"}
+              </Button>
             </div>
-          )}
+          ) : null}
 
-          {success && streamKey && (
-            <div className={styles.streamKeyContainer}>
-              <Text weight="semibold" size={400}>
-                Your Stream Key
-              </Text>
+          {(success || Boolean(channel?.is_live)) && (
+            <>
+              <div className={styles.streamKeyContainer}>
+                <Text weight="semibold" size={400}>
+                  Your Stream Key
+                </Text>
 
-              <div className={styles.streamKeyInput}>
-                <Field className={styles.streamKeyField}>
-                  <Input
-                    value={streamKey}
-                    readOnly
+                <div className={styles.streamKeyInput}>
+                  <Field className={styles.streamKeyField}>
+                    <Input
+                      value={streamKey || channel?.stream_key}
+                      readOnly
+                      style={{
+                        fontFamily: "monospace",
+                        backgroundColor: tokens.colorNeutralBackground3,
+                      }}
+                    />
+                  </Field>
+                  <Button
+                    appearance="primary"
+                    icon={copied ? <CheckmarkRegular /> : <CopyRegular />}
+                    onClick={handleCopyStreamKey}
+                    className={styles.copyButton}
                     style={{
-                      fontFamily: "monospace",
-                      backgroundColor: tokens.colorNeutralBackground3,
+                      backgroundColor: copied
+                        ? tokens.colorPaletteGreenBackground3
+                        : undefined,
                     }}
                   />
-                </Field>
-                <Button
-                  appearance="primary"
-                  icon={copied ? <CheckmarkRegular /> : <CopyRegular />}
-                  onClick={handleCopyStreamKey}
-                  className={styles.copyButton}
-                  style={{
-                    backgroundColor: copied
-                      ? tokens.colorPaletteGreenBackground3
-                      : undefined,
-                  }}
-                />
-              </div>
+                </div>
 
-              <Text className={styles.instructionText}>
-                Copy this key and paste it into your streaming software (OBS,
-                XSplit, etc.)
-              </Text>
+                <Text className={styles.instructionText}>
+                  Copy this key and paste it into your streaming software (OBS,
+                  XSplit, etc.)
+                </Text>
 
-              <div className={styles.actionButtons}>
-                <Button appearance="primary" icon={<VideoRegular />}>
-                  Go to Stream Dashboard
-                </Button>
-                <Button
-                  appearance="secondary"
-                  icon={<ArrowClockwiseRegular />}
-                  onClick={handleReset}
-                >
-                  Start New Stream
-                </Button>
+                <div className={styles.actionButtons}>
+                  <Button appearance="primary" icon={<VideoRegular />}>
+                    Go to Stream
+                  </Button>
+                  <Button
+                    appearance="secondary"
+                    icon={<ArrowClockwiseRegular />}
+                    onClick={handleRegenerateKey}
+                  >
+                    Regenerate Stream Key
+                  </Button>
+                  <Button
+                    appearance="secondary"
+                    onClick={() => stopStreamMutation.mutateAsync()}
+                    disabled={stopStreamMutation.isPending}
+                  >
+                    {stopStreamMutation.isPending ? "Ending..." : "End Stream"}
+                  </Button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </Card>

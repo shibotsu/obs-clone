@@ -171,6 +171,8 @@ const HomeLiveStreams = () => {
     },
   });
 
+  console.log(data);
+
   const channels = Array.isArray(data?.channels) ? data?.channels : [];
   const slides = chunkArray(channels, itemsPerSlide);
 
