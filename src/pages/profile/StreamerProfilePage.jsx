@@ -83,7 +83,7 @@ const StreamerProfilePage = () => {
 
   const { data, isLoading, error } = useQuery({
     queryFn: () =>
-      fetch(`http://127.0.0.1:8000/api/profile/${id}`, {
+      fetch(`http://157.230.16.67:8000/api/profile/${id}`, {
         headers: {
           "Content-Type": "application/json",
         },

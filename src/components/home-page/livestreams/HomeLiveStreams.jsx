@@ -161,7 +161,7 @@ const HomeLiveStreams = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["homePageLivestreams"],
     queryFn: async () => {
-      const response = await fetch("http://127.0.0.1:8000/api/channels");
+      const response = await fetch("http://157.230.16.67:8000/api/channels");
 
       if (!response.ok) {
         return new Error("Unable to load livestreams.");

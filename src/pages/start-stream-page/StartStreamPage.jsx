@@ -119,7 +119,7 @@ const StartStreamingPage = () => {
     queryKey: ["channelData"],
     queryFn: async () => {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/channel/${user.id}`,
+        `http://157.230.16.67:8000/api/channel/${user.id}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -155,7 +155,7 @@ const StartStreamingPage = () => {
   const startStreamMutation = useMutation({
     mutationKey: ["startStream"],
     mutationFn: async (formData) => {
-      const response = await fetch("http://127.0.0.1:8000/api/startstream", {
+      const response = await fetch("http://157.230.16.67:8000/api/startstream", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -185,7 +185,7 @@ const StartStreamingPage = () => {
   const stopStreamMutation = useMutation({
     mutationKey: ["stopStream"],
     mutationFn: async () => {
-      const response = await fetch("http://127.0.0.1:8000/api/endstream", {
+      const response = await fetch("http://157.230.16.67:8000/api/endstream", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -213,7 +213,7 @@ const StartStreamingPage = () => {
   const { mutateAsync: regenerateKeyMutate } = useMutation({
     mutationFn: async () => {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/channel/${user.id}/newKey`,
+        `http://157.230.16.67:8000/api/channel/${user.id}/newKey`,
         {
           method: "PUT",
           headers: {

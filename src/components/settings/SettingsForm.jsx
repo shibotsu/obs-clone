@@ -69,7 +69,7 @@ export const SettingsForm = ({ changingValue }) => {
   const { mutate: changeUsernameMutation, isLoading: isUpdatingUsername } =
     useMutation({
       mutationFn: (newUsername) =>
-        fetch("http://127.0.0.1:8000/api/usernameupdate", {
+        fetch("http://157.230.16.67:8000/api/usernameupdate", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -102,7 +102,7 @@ export const SettingsForm = ({ changingValue }) => {
   const { mutate: changeEmailMutation, isLoading: isUpdatingEmail } =
     useMutation({
       mutationFn: (newEmail) =>
-        fetch("http://127.0.0.1:8000/api/emailupdate", {
+        fetch("http://157.230.16.67:8000/api/emailupdate", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -133,7 +133,7 @@ export const SettingsForm = ({ changingValue }) => {
   const { mutate: changePasswordMutation, isLoading: isUpdatingPassword } =
     useMutation({
       mutationFn: (newPassword) =>
-        fetch("http://127.0.0.1:8000/api/passwordupdate", {
+        fetch("http://157.230.16.67:8000/api/passwordupdate", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

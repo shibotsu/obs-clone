@@ -10,7 +10,7 @@ const MostFollowedStreamers = () => {
 
   const { data, isLoading } = useQuery({
     queryFn: () =>
-      fetch("http://127.0.0.1:8000/api/most_followed", {
+      fetch("http://157.230.16.67:8000/api/most_followed", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

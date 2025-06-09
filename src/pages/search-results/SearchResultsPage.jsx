@@ -47,7 +47,7 @@ const SearchResultsPage = () => {
   const { data, refetch, isLoading } = useQuery({
     queryKey: ["searchResults", queryToUse],
     queryFn: () => {
-      fetch("http://127.0.0.1:8000/api/search", {
+      fetch("http://157.230.16.67:8000/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: queryToUse }),

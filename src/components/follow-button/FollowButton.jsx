@@ -11,7 +11,7 @@ export const FollowButton = ({ id }) => {
   const { data, loading, error, isLoading } = useQuery({
     queryKey: ["followStatus", id],
     queryFn: () =>
-      fetch(`http://127.0.0.1:8000/api/isfollowing/${id}`, {
+      fetch(`http://157.230.16.67:8000/api/isfollowing/${id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -22,7 +22,7 @@ export const FollowButton = ({ id }) => {
 
   const followMutation = useMutation({
     mutationFn: () =>
-      fetch(`http://127.0.0.1:8000/api/follow/${id}`, {
+      fetch(`http://157.230.16.67:8000/api/follow/${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,7 +37,7 @@ export const FollowButton = ({ id }) => {
 
   const unfollowMutation = useMutation({
     mutationFn: () =>
-      fetch(`http://127.0.0.1:8000/api/unfollow/${id}`, {
+      fetch(`http://157.230.16.67:8000/api/unfollow/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

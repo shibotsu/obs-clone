@@ -56,7 +56,7 @@ export const SearchBar = () => {
   const { data, isLoading } = useQuery({
     queryKey: ["searchResults", debouncedQuery],
     queryFn: () =>
-      fetch("http://127.0.0.1:8000/api/search", {
+      fetch("http://157.230.16.67:8000/api/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -20,7 +20,7 @@ export default function WatchPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["channel", id],
     queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:8000/api/channel/${id}`, {
+      const res = await fetch(`http://157.230.16.67:8000/api/channel/${id}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`, // ← ADDED

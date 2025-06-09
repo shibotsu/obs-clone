@@ -121,7 +121,7 @@ const ProfilePage = () => {
       const formData = new FormData();
       formData.append("profile_picture", file);
 
-      const response = await fetch("http://127.0.0.1:8000/api/picture", {
+      const response = await fetch("http://157.230.16.67:8000/api/picture", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -158,7 +158,7 @@ const ProfilePage = () => {
   const handleSaveAbout = async () => {
     try {
       // You can implement API call here to save the about me text
-      // const response = await fetch(`http://127.0.0.1:8000/api/user/about`, {
+      // const response = await fetch(`http://157.230.16.67:8000/api/user/about`, {
       //   method: 'PUT',
       //   headers: {
       //     'Authorization': `Bearer ${token}`,
