@@ -9,43 +9,56 @@ import StreamChat from "../../components/chat/StreamChat";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
 import "./Watch.css";
+import { useAuth } from "../../context/AuthContext"; // ← ADDED
 
 export default function WatchPage() {
   const { id } = useParams();
   const videoNode = useRef(null);
   const playerRef = useRef(null);
+  const { token } = useAuth(); // ← ADDED
 
-  const {
-    data: channel,
-    isLoading,
-    isError,
-  } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["channel", id],
-    queryFn: () =>
-      fetch(`http://127.0.0.1:8000/api/profile/${id}`).then((res) => {
-        if (!res.ok) {
-          throw new Error("Streamer not found");
-        }
-        return res.json();
-      }),
+    queryFn: async () => {
+      const res = await fetch(`http://127.0.0.1:8000/api/channel/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ← ADDED
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Streamer not found");
+      }
+
+      return res.json(); // returns { channel, user }
+    },
   });
 
   useEffect(() => {
-    if (!playerRef.current && videoNode.current) {
-      playerRef.current = videojs(videoNode.current, {
-        autoplay: true,
-        controls: true,
-        muted: true,
-        preload: "auto",
-        fluid: true,
-        sources: [
-          {
-            src: "http://192.168.1.96:8080/hls/mykey.m3u8",
-            type: "application/x-mpegURL",
-          },
-        ],
-      });
+    if (!data?.channel || !videoNode.current) return;
+
+    const streamKey = data.channel.stream_key;
+    const videoSrc = `http://157.230.16.67:8080/hls/${streamKey}.m3u8`;
+
+    if (playerRef.current) {
+      playerRef.current.src({ src: videoSrc, type: "application/x-mpegURL" });
+      return;
     }
+
+    playerRef.current = videojs(videoNode.current, {
+      autoplay: true,
+      controls: true,
+      muted: true,
+      preload: "auto",
+      fluid: true,
+      sources: [
+        {
+          src: videoSrc,
+          type: "application/x-mpegURL",
+        },
+      ],
+    });
 
     return () => {
       if (playerRef.current) {
@@ -53,7 +66,7 @@ export default function WatchPage() {
         playerRef.current = null;
       }
     };
-  }, []);
+  }, [data]);
 
   return (
     <div style={{ height: "calc(100vh - 65px)", overflow: "hidden" }}>
@@ -95,10 +108,10 @@ export default function WatchPage() {
 
           {isLoading && <p>Loading stream info...</p>}
           {isError && <p>Streamer not found.</p>}
-          {channel && (
+          {data && (
             <>
-              <StreamHeader channel={channel} />
-              <StreamDescription channel={channel} />
+              <StreamHeader channel={data.channel} user={data.user} />
+              <StreamDescription channel={data.channel} user={data.user} />
             </>
           )}
         </section>
